@@ -30,7 +30,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 cmds = {
@@ -720,18 +720,24 @@ def get_newusername(usr):
 	if opt.mode == 'add':
 		if form.getfirst('uid'):
 			usr.uid = form.getfirst('uid')
-		else:
-			raise RBFatalError('New username must be given')
 	else:
 		if form.getfirst('newuid'):
 			usr.uid = form.getfirst('newuid')
 
-	if opt.mode == 'add' or usr.uid:
-		try:
-			udb.check_username(usr.uid)
-			udb.check_userfree(usr.uid)
-		except RBWarningError, e:
-			error(e)
+	# New username is optional for renewals but compulsory for all other
+	# modes that require it (add, rename, freename).
+	#
+	if opt.mode == 'renew' and not usr.uid:
+		return
+
+	if not usr.uid:
+		raise RBFatalError('New username must be given')
+
+	try:
+		udb.check_username(usr.uid)
+		udb.check_userfree(usr.uid)
+	except RBWarningError, e:
+		error(e)
 
 def get_cardid(usr):
 	"""Set usr.id to DCU ID number in cardid field.
