@@ -14,23 +14,15 @@ import re
 import sys
 from xml.sax.saxutils import quoteattr
 
-# 3rd party modules
-
-#import pgdb
-
 # RedBrick modules
 
-import rbconfig
-from rberror import *
-from rbopt import *
-from rbuser import *
 from rbuserdb import *
 
 #-----------------------------------------------------------------------------#
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
 
 cmds = {
@@ -485,7 +477,7 @@ def delete():
 	get_updatedby(usr)
 	get_username(usr)
 
-	udb.delete(usr.uid)
+	udb.delete(usr)
 
 	okay = 1
 	okay_string += 'OKAY: User deleted: %s\n' % usr.uid
