@@ -1,3 +1,4 @@
+# -*- coding: iso8859-15 -*-
 #-----------------------------------------------------------------------------#
 # MODULE DESCRIPTION                                                          #
 #-----------------------------------------------------------------------------#
@@ -11,29 +12,22 @@ import getopt
 import getpass
 import grp
 import os
+import pprint
 import pwd
 import re
 import readline
 import sys
 
-# 3rd party modules
-
-#import
-
 # RedBrick modules
 
-import rbconfig
 from rbaccount import *
-from rberror import *
-from rbopt import *
-from rbuser import *
 from rbuserdb import *
 
 #-----------------------------------------------------------------------------#
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.1 $'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -52,21 +46,23 @@ cmds = {
 	'show':			('Show user details', '[username]'),
 	'freename':		('Check if a username is free', '[username]'),
 	'search':		('Search user and dcu databases', '[username]'),
-	'sync':			('Synchronise accounts with userdb (for RRS)', '[rrs-logfile]'),
+	'pre_sync':		('Dump LDAP tree for use by sync before new tree is loaded', ''),
+	'sync':			('Synchronise accounts with userdb (for RRS)', '[rrs-logfile [presync-file]]'),
 	'sync_dcu_info':	('Interactive update of userdb using dcu database info', ''),
-	'newbies_list':		('List all paid newbies', ''),
-	'renewals_list':	('List all paid renewals (non-newbie)', ''),
+	'list_newbies':		('List all paid newbies', ''),
+	'list_renewals':	('List all paid renewals (non-newbie)', ''),
 	'freename_list':	('List all usernames that are taken', ''),
-	'unpaid_list':		('List all non-renewed users', ''),
-	'unpaid_list_normal':	('List all normal non-renewed users', ''),
-	'unpaid_list_reset':	('List all normal non-renewed users with reset shells', ''),
-	'unpaid_list_grace':	('List all grace non-renewed users', ''),
+	'list_unpaid':		('List all non-renewed users', ''),
+	'list_unpaid_normal':	('List all normal non-renewed users', ''),
+	'list_unpaid_reset':	('List all normal non-renewed users with reset shells', ''),
+	'list_unpaid_grace':	('List all grace non-renewed users', ''),
 	'newyear':		('Prepare database for start of new academic year', ''),
 	'unpaid_warn':		('Warn (mail) all non-renewed users', ''),
 	'unpaid_disable':	('Disable all normal non-renewed users', ''),
 	'unpaid_delete':	('Delete all grace non-renewed users', ''),
 	'checkdb':		('Check database for inconsistencies', ''),
 	'stats':		('Show database and account statistics', ''),
+	'create_uidNumber':	('Create uidNumber text file with next free uidNumber', ''),
 }
 
 # Command groups
@@ -76,8 +72,8 @@ cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser')
 cmds_single_user_info = ('show', 'freename')
 cmds_interactive_batch = ('search', 'sync', 'sync_dcu_info')
 cmds_batch = ('newyear', 'unpaid_warn', 'unpaid_disable', 'unpaid_delete')
-cmds_batch_info = ('newbies_list', 'renewals_list', 'freename_list', 'unpaid_list', 'unpaid_list_normal', 'unpaid_list_reset', 'unpaid_list_grace')
-cmds_misc = ('checkdb', 'stats')
+cmds_batch_info = ('pre_sync', 'list_newbies', 'list_renewals', 'freename_list', 'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
+cmds_misc = ('checkdb', 'stats', 'create_uidNumber')
 
 # Command group descriptions
 #
@@ -179,9 +175,9 @@ def main():
 		elif o == '-t':
 			opt.usertype = a
 		elif o == '-n':
-			opt.name = a
+			opt.cn = a
 		elif o == '-e':
-			opt.email = a
+			opt.altmail = a
 		elif o == '-i':
 			opt.id = a
 		elif o == '-c':
@@ -189,7 +185,7 @@ def main():
 		elif o == '-y':
 			opt.year = a
 		elif o == '-s':
-			opt.years_paid = a
+			opt.yearsPaid = a
 		elif o == '-b':
 			opt.birthday = a
 		elif o == '-q':
@@ -275,14 +271,13 @@ def add():
 	
 	usr = RBUser()
 	get_usertype(usr)
-	# XXX
-	#get_freeusername(usr, not usr.usertype in rbconfig.usertypes_system)
 	get_freeusername(usr)
+	oldusertype = usr.usertype
 
 	while 1:
 		try:
 			get_id(usr)
-			udb.get_userinfo_new(usr)
+			udb.get_userinfo_new(usr, override = 1)
 		except RBError, e:
 			if not rberror(e, opt.id == None):
 				break
@@ -291,16 +286,36 @@ def add():
 			break
 	
 	udb.get_userdefaults_new(usr)
+
+	# If we get info from the DCU databases, show the user details and any
+	# differences to previous data (in this case it's just the initial
+	# usertype entered at first) and offer to edit these with a default of
+	# no so we can hit return and quickly add a user without verifying each
+	# attribute.
+	#
+	if usr.cn:
+		udb.show(usr)
+		print
+		if oldusertype != usr.usertype:
+			print 'NOTICE: Given usertype is different to one determined by DCU database! '
+			print
+		edit_details = yesno('Details of user to be added are shown above. Edit user details?', 0)
+	else:
+		edit_details = 1
+
+	if edit_details:
+		get_usertype(usr)
+		get_newbie(usr)
+		get_name(usr)
+		get_email(usr)
+		get_course(usr)
+		get_year(usr)
+		get_years_paid(usr)
+		get_birthday(usr)
+
 	get_createaccount(usr)
 	get_setpasswd(usr)
 	get_mailuser(usr)
-	get_newbie(usr)
-	get_name(usr)
-	get_email(usr)
-	get_course(usr)
-	get_year(usr)
-	get_years_paid(usr)
-	get_birthday(usr)
 	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
@@ -309,32 +324,25 @@ def add():
 	acc.setopt(opt)
 	
 	if opt.setpasswd:
-		usr.passwd = acc.mkpasswd()
+		usr.passwd = rbconfig.gen_passwd()
 
 	if not opt.aconly:
-		print "User added: %s %s (%s)" % (usr.usertype, usr.username, usr.name)
+		print "User added: %s %s (%s)" % (usr.usertype, usr.uid, usr.cn)
 		udb.add(usr)
 
-	if not opt.dbonly and usr.usertype != 'reserved':
-		# If we're adding a "DCU" person and their email address is not
-		# a redbrick one then use it to place in their .forward file.
-		#
-		email = None
-		if usr.usertype in rbconfig.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
-			email = usr.email
-
-		print "Account created: %s %s password: %s" % (usr.usertype, usr.username, usr.passwd)
-		acc.add(usr.username, usr.usertype, usr.name, usr.passwd, email)
+	if not opt.dbonly:
+		print "Account created: %s %s password: %s" % (usr.usertype, usr.uid, usr.passwd)
+		acc.add(usr)
 	else:
 		# If not creating a Unix account but setting a new password is
 		# required, do that now.
 		#
 		if opt.setpasswd:
-			print "Account password set for %s password: %s" % (usr.username, usr.passwd)
-			acc.setpasswd(usr.username, usr.passwd)
+			print "Account password set for %s password: %s" % (usr.uid, usr.passwd)
+			#acc.setpasswd(usr.uid, usr.passwd)
 
 	if opt.mailuser:
-		print "User mailed:", usr.email
+		print "User mailed:", usr.altmail
 		mailuser(usr)
 
 def delete():
@@ -342,6 +350,7 @@ def delete():
 
 	usr = RBUser()
 	get_username(usr)
+	udb.get_user_byname(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -349,29 +358,31 @@ def delete():
 
 	if not opt.aconly:
 		print 'User deleted:', usr.uid
-		udb.delete(usr.uid)
-	#if not opt.dbonly:
-	#	print 'Account deleted:', usr.username
-	#	acc.delete(usr.username)
+		udb.delete(usr)
+	if not opt.dbonly:
+		print 'Account deleted:', usr.uid
+		acc.delete(usr)
 	
 def renew():
 	"""Renew user."""
 
+	raise RBFatalError("NOT IMPLEMENTED YET")
+
 	usr = RBUser()
 	curusr = RBUser()
 	get_username(usr)
-	newusr = RBUser(username = usr.username)
+	newusr = RBUser(username = usr.uid)
 
 	try:
 		udb.get_userinfo_renew(newusr, curusr)
 	except RBError, e:
-		if rberror(e, opt.username == None):
+		if rberror(e, opt.uid == None):
 			return
 	
 	try:
 		udb.check_unpaid(curusr)
 	except RBError, e:
-		if rberror(e, opt.username == None):
+		if rberror(e, opt.uid == None):
 			return
 
 	usr.usertype = newusr.usertype
@@ -396,8 +407,8 @@ def renew():
 			break
 
 	get_newbie(usr)
-	get_name(usr, (curusr.name,))
-	get_email(usr, (curusr.email,))
+	get_name(usr, (curusr.cn,))
+	get_email(usr, (curusr.altmail,))
 	get_course(usr, (curusr.course,))
 	get_year(usr, (curusr.year,))
 	get_years_paid(usr)
@@ -409,25 +420,25 @@ def renew():
 	acc.setopt(opt)
 
 	if not opt.aconly:
-		print 'User renewed:', usr.username
+		print 'User renewed:', usr.uid
 		udb.renew(usr)
 	
 	if opt.setpasswd:
 		usr.passwd = acc.mkpasswd()
-		print "Account password set for %s password: %s" % (usr.username, usr.passwd)
-		acc.setpasswd(usr.username, usr.passwd)
+		print "Account password set for %s password: %s" % (usr.uid, usr.passwd)
+		acc.setpasswd(usr.uid, usr.passwd)
 	
 	if not opt.dbonly:
 		if usr.oldusertype != usr.usertype:
-			print 'Account converted: %s -> %s' % (usr.username, usr.usertype)
-			acc.convert(usr.username, usr.usertype)
+			print 'Account converted: %s -> %s' % (usr.uid, usr.usertype)
+			acc.convert(usr.uid, usr.usertype)
 	
-		if not acc.valid_shell(acc.get_shell(usr.username)):
-			print 'Account shell reset for', usr.username
-			acc.reset_shell(usr.username)
+		if not acc.valid_shell(acc.get_shell(usr.uid)):
+			print 'Account shell reset for', usr.uid
+			acc.reset_shell(usr.uid)
 	
 	if opt.mailuser:
-		print "User mailed:", usr.email
+		print "User mailed:", usr.altmail
 		mailuser(usr)
 	
 def update():
@@ -435,6 +446,7 @@ def update():
 
 	# Update mode only works on database.
 	opt.dbonly = 1
+	opt.aconly = 0
 
 	usr = RBUser()
 	get_username(usr)
@@ -445,8 +457,9 @@ def update():
 	while 1:
 		try:
 			get_id(usr)
-			newusr = RBUser(usertype = usr.usertype, id = usr.id)
-			udb.get_dcu_byid(newusr)
+			newusr = RBUser(id = usr.id)
+			if usr.id != None:
+				udb.get_dcu_byid(newusr)
 		except RBError, e:
 			if not rberror(e, opt.id == None):
 				break
@@ -454,8 +467,8 @@ def update():
 		else:
 			break
 
-	get_name(usr, (newusr.name,))
-	get_email(usr, (newusr.email,))
+	get_name(usr, (newusr.cn,))
+	get_email(usr, (newusr.altmail,))
 	get_course(usr, (newusr.course,))
 	get_year(usr, (newusr.year,))
 	get_years_paid(usr)
@@ -464,9 +477,8 @@ def update():
 
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
-	acc.setopt(opt)
 	
-	print "User updated:", usr.username
+	print "User updated:", usr.uid
 	udb.update(usr)
 
 def rename():
@@ -491,8 +503,9 @@ def convert():
 	"""Convert user."""
 
 	usr = RBUser()
+	newusr = RBUser()
 	get_username(usr)
-	get_convert_usertype(usr)
+	get_convert_usertype(newusr)
 	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
@@ -500,11 +513,11 @@ def convert():
 	acc.setopt(opt)
 
 	if not opt.aconly:
-		print 'User converted: %s -> %s' % (usr.username, usr.usertype)
-		udb.convert(usr.username, usr.usertype, usr.updatedby)
+		print 'User converted: %s -> %s' % (usr.uid, newusr.usertype)
+		udb.convert(usr, newusr)
 	if not opt.dbonly:
-		print 'Account converted: %s -> %s' % (usr.username, usr.usertype)
-		acc.convert(usr.username, usr.usertype)
+		print 'Account converted: %s -> %s' % (usr.uid, newusr.usertype)
+		acc.convert(usr, newusr)
 
 #-----------------------------------------------------------------------------#
 # SINGLE ACCOUNT COMMANDS                                                     #
@@ -521,13 +534,12 @@ def resetpw():
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
-	acc.setopt(opt)
 
 	print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
-	udb.setpasswd(usr.uid, usr.passwd)
+	udb.set_passwd(usr)
 
 	if opt.mailuser:
-		print "User mailed:", usr.email
+		print "User mailed:", usr.altmail
 		mailuser(usr)
 
 def resetsh():
@@ -535,16 +547,21 @@ def resetsh():
 
 	usr = RBUser()
 	get_username(usr)
+	udb.get_user_byname(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	print 'Account shell reset for', usr.username
-	acc.reset_shell(usr.username)
+	if udb.reset_shell(usr):
+		print 'Account shell reset for', usr.uid, '(%s)' % usr.loginShell
+	else:
+		print 'Account', usr.uid, 'has valid shell.'
 
 def disuser():
 	"""Disuser a user."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	usr = RBUser()
 	get_username(usr)
@@ -556,10 +573,12 @@ def disuser():
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	acc.disuser(usr.username, usr.disuser_period)
+	acc.disuser(usr.uid, usr.disuser_period)
 
 def reuser():
 	"""Re-user a user."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	usr = RBUser()
 	get_username(usr)
@@ -577,7 +596,7 @@ def show():
 	"""Show user's database and account details."""
 
 	usr = RBUser()
-	get_username(usr)
+	get_username(usr, check_user_exists = 0)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -602,17 +621,19 @@ def freename():
 def search():
 	"""Search user and/or DCU databases."""
 
+	raise RBFatalError("NOT IMPLEMENTED YET")
+
 	pager = os.environ.get('PAGER', 'more')
 
 	username = None
 	if len(opt.args) > 0:
 		username = opt.args.pop(0)
-	if not username and not opt.id and not opt.name:
+	if not username and not opt.id and not opt.cn:
 		username = ask('Enter username to search user database', optional = 1)
 		if not username:
 			opt.id = ask('Enter DCU Id number to search user and DCU databases', optional = 1)
 			if not opt.id:
-				opt.name = ask('Enter name to search user and DCU databases', optional = 1)
+				opt.cn = ask('Enter name to search user and DCU databases', optional = 1)
 	
 	if username:
 		res = udb.search_users_byusername(username)
@@ -620,22 +641,22 @@ def search():
 		print >> fd, "User database search for username '%s' - %d match%s\n" % (username, len(res), len(res) != 1 and 'es' or '')
 		show_search_results(res, fd)
 		fd.close()
-	elif opt.id or opt.name:
+	elif opt.id or opt.cn:
 		fd = os.popen(pager, 'w')
 		if opt.id:
 			res = udb.search_users_byid(opt.id)
 			print >> fd, "User database search for id '%s' - %d match%s\n" % (opt.id, len(res), len(res) != 1 and 'es' or '')
 		else:
-			res = udb.search_users_byname(opt.name)
-			print >> fd, "User database search for name '%s' - %d match%s\n" % (opt.name, len(res), len(res) != 1 and 'es' or '')
+			res = udb.search_users_byname(opt.cn)
+			print >> fd, "User database search for name '%s' - %d match%s\n" % (opt.cn, len(res), len(res) != 1 and 'es' or '')
 		show_search_results(res, fd)
 		print >> fd
 		if opt.id:
 			res = udb.search_dcu_byid(opt.id)
 			print >> fd, "DCU database search for id '%s' - %d match%s\n" % (opt.id, len(res), len(res) != 1 and 'es' or '')
 		else:
-			res = udb.search_dcu_byname(opt.name)
-			print >> fd, "DCU database search for name '%s' - %d match%s\n" % (opt.name, len(res), len(res) != 1 and 'es' or '')
+			res = udb.search_dcu_byname(opt.cn)
+			print >> fd, "DCU database search for name '%s' - %d match%s\n" % (opt.cn, len(res), len(res) != 1 and 'es' or '')
 		show_search_results(res, fd)
 		fd.close()
 	else:
@@ -649,6 +670,21 @@ def show_search_results(res, fd):
 		print >> fd, '%s %s %s %s %s %s %s' % ('-' * rbconfig.maxlen_uname, '-' * rbconfig.maxlen_group, '-' * 8, '-' * 30, '-' * 6, '-' * 4, '-' * 30)
 		for username, usertype, id, name, course, year, email in res:
 			print >> fd, "%-*s %-*s %-8s %-30.30s %-6.6s %-4.4s %s" % (rbconfig.maxlen_uname, username or '-', rbconfig.maxlen_group, usertype or '-', id != None and id or '-', name, course or '-', year or '-', email)
+
+def pre_sync():
+	"""Dump current LDAP information to a file for use by sync().
+	
+	This step is performed before the new LDAP accounts tree is loaded so
+	that a bare minimum copy of the old tree is available."""
+
+	get_pre_sync()
+
+	print 'Dumping...'
+
+	fd = open(opt.presync, 'w')
+	print >> fd, 'global old_ldap\nold_ldap = ',
+	pprint.pprint(udb.list_pre_sync(), fd)
+	fd.close()
 
 def sync():
 	"""Synchronise accounts (i.e. no changes are made to userdb) after an
@@ -683,16 +719,91 @@ def sync():
 	
 	"""
 
-	user_rename_map = {}
-	user_rename_reverse_map = {}
-	reset_password = {}
-	
 	get_rrslog()
+	get_pre_sync()
 	
+	# Load in old_ldap dictionary.
+	#
+	execfile(opt.presync)
+
 	# XXX: Set override by default ?
 	# Set options for override & test mode.
 	udb.setopt(opt)
 	acc.setopt(opt)
+
+	# Build user_rename maps.
+
+	user_convert = {}
+	user_rename = {}
+	user_rename_reverse = {}
+	user_rename_stages = {}
+	reset_password = {}
+	
+	# Open log file to build map of renamed usernames, usernames flagged
+	# for a new password and usernames that were converted.
+	#
+	fd = open(opt.rrslog, 'r')
+	for line in fd.readlines():
+		tlog = line.rstrip().split(':')
+	
+		# We ignore renames of new accounts as we just go by the final
+		# entry in the database.
+		#
+		if tlog[4] == 'rename-existing':
+			olduid = tlog[5]
+			newuid = tlog[6]
+
+			# Remove old user rename mapping and add new one unless
+			# it points back to the original username.
+			#
+			user_rename_reverse[newuid] = user_rename_reverse.pop(olduid, olduid)
+			if user_rename_reverse[newuid] == newuid:
+				user_rename_reverse.pop(newuid)
+				
+			# If this user was flagged for new password and/or a
+			# conversion, remove the old user mapping and add the
+			# new one.
+			#
+			if user_convert.has_key(olduid):
+				user_convert[tlog[6]] = user_convert.pop(tlog[5])
+			if reset_password.has_key(tlog[5]):
+				reset_password[tlog[6]] = reset_password.pop(tlog[5])
+		elif tlog[4] == 'convert':
+			# User was converted, so we flag it. Don't care what
+			# they're converted to, we check that later.
+			#
+			user_convert[tlog[5]] = 1
+		elif tlog[4] == 'renew':
+			# tlog[7] indicates whether a new password is required
+			# or not. We take the last value of this in the log
+			# file as the final decision.
+			#
+			reset_password[tlog[5]] = int(tlog[7])
+	fd.close()
+
+	# Now build olduid -> newuid map from the reverse one.
+	#
+	for newuid, olduid in user_rename_reverse.items():
+		user_rename[olduid] = newuid
+	
+	if opt.test:
+		print 'rrs.log username maps'
+		print
+		print 'RENAME'
+		print
+		for k, v in user_rename.items():
+			print k, '->', v
+		print
+		print 'CONVERT'
+		print
+		for k in user_convert.keys():
+			print k
+		print
+		print 'RESETPW'
+		print
+		for k, v in reset_password.items():
+			if v: print k
+		print
 
 	#-------------#
 	# sync_rename #
@@ -701,28 +812,20 @@ def sync():
 	print '===> start sync_rename'
 	pause()
 
-	fd = open(opt.rrslog, 'r')
-	for line in fd.readlines():
-		tlog = line.rstrip().split(':')
-	
-		# We ignore renames of new accounts as we just go by the final
-		# entry in the database.
-		#
-		if tlog[4] != 'rename-existing':
-			continue
-
-		user_rename_map[tlog[5]] = tlog[6]
-               
+	for olduid, newuid in user_rename.items():
+		oldusr = RBUser(uid = olduid, homeDirectory = old_ldap[olduid]['homeDirectory'])
+		newusr = RBUser(uid = newuid)
+		udb.get_user_byname(newusr)
 		try:
-			pwd.getpwnam(tlog[5])
-		except KeyError:
+			acc.check_account_byname(oldusr)
+		except RBFatalError:
 			# Old account doesn't exist, must be renamed already.
 			if opt.test:
-				print 'SKIPPED: account rename: %s -> %s' % (tlog[5], tlog[6])
+				print 'SKIPPED: account rename: %s -> %s' % (olduid, newuid)
 		else:
-			print 'Account renamed: %s -> %s' % (tlog[5], tlog[6])
-			acc.rename(tlog[5], tlog[6])
-	fd.close()
+			print 'Account renamed: %s -> %s' % (olduid, newuid)
+			acc.rename(oldusr, newusr)
+			#pause()
 	
 	#--------------#
 	# sync_convert #
@@ -731,42 +834,53 @@ def sync():
 	print '\n===> start sync_convert'
 	pause()
 	
-	for username, usertype in udb.non_system_list():
-		group = None
+	for newuid in user_convert.keys():
+		olduid = user_rename_reverse.get(newuid, newuid)
+		if not old_ldap.has_key(olduid):
+			print 'WARNING: Existing non newbie user', newuid, 'not in previous copy of ldap tree!'
+			continue
+
+		oldusr = RBUser(uid = olduid, homeDirectory = old_ldap[olduid]['homeDirectory'], usertype = old_ldap[olduid]['usertype'])
+		newusr = RBUser(uid = newuid)
+		udb.get_user_byname(newusr)
+		
+		# If old and new usertypes are the same, they were temporarily
+		# or accidentally converted to a different usertype then
+		# converted back.
+		#
+		if oldusr.usertype == newusr.usertype:
+			continue
+
 		try:
-			pw = pwd.getpwnam(username)
-		except KeyError:
-			# This user must be a newbie and the account hasn't
-			# been added yet. Conversions only apply to existing
-			# accounts so do nothing!
-			#
+			acc.check_account_byname(oldusr)
+		except RBFatalError:
+			# Old account doesn't exist, must be converted already.
 			if opt.test:
-				print 'IGNORED non existant account:', username
+				print 'SKIPPED: account convert: %s: %s -> %s' % (oldusr.uid, oldusr.usertype, newusr.usertype)
 		else:
-			group = acc.get_groupname_byid(pw[3])
-			if group != usertype:
-				print 'Account converted: %s: %s -> %s' % (username, group, usertype)
-				acc.convert(username, usertype)
+			print 'Account converted: %s: %s -> %s' % (oldusr.uid, oldusr.usertype, newusr.usertype)
+			acc.convert(oldusr, newusr)
+			#pause()
 
 	#-------------#
 	# sync_delete #
 	#-------------#
 
-	print '\n===> start sync_delete'
-	pause()
+	#print '\n===> start sync_delete'
+	#pause()
 
-	for pw in pwd.getpwall():
-		try:
-			udb.check_user_byname(pw[0])
-		except RBError:
-			# User doesn't exist in database, ask to delete it.
-			#
-			if yesno("Delete account %s" % pw[0]):
-				print 'Account deleted: %s' % pw[0]
-				acc.delete(pw[0])
-		else:
-			# User exists in database, do nothing!
-			pass
+	#for pw in pwd.getpwall():
+	#	try:
+	#		udb.check_user_byname(pw[0])
+	#	except RBError:
+	#		# User doesn't exist in database, ask to delete it.
+	#		#
+	#		if yesno("Delete account %s" % pw[0]):
+	#			print 'Account deleted: %s' % pw[0]
+	#			acc.delete(pw[0])
+	#	else:
+	#		# User exists in database, do nothing!
+	#		pass
 	
 	#----------#
 	# sync_add #
@@ -775,30 +889,24 @@ def sync():
 	print '\n===> start sync_add'
 	pause()
 
-	for username in udb.newbies_list():
+	for username in udb.list_newbies():
+		usr = RBUser(uid = username)
+		udb.get_user_byname(usr)
 		try:
-			pwd.getpwnam(username)
-		except KeyError:
-			usr = RBUser(username = username)
-			# Don't catch exception as user is known to exist.
-			udb.get_user_byname(usr)
-			usr.passwd = acc.mkpasswd()
-
-			# If we're adding a "DCU" person and their email address is not
-			# a redbrick one then use it to place in their .forward file.
-			#
-			email = None
-			if usr.usertype in rbconfig.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
-				email = usr.email
-
-			print "Account created: %s %s password: %s" % (usr.usertype, usr.username, usr.passwd)
-			acc.add(usr.username, usr.usertype, usr.name, usr.passwd, email)
-			print "User mailed:", usr.email
+			acc.check_account_byname(usr)
+		except RBFatalError:
+			usr.passwd = rbconfig.gen_passwd()
+			print 'Account password set for %s password: %s' % (usr.uid, usr.passwd)
+			udb.set_passwd(usr)
+			print "Account created: %s %s" % (usr.usertype, usr.uid)
+			acc.add(usr)
+			print "User mailed:", usr.altmail
 			mailuser(usr)
-		else:
-			# Account has already been added, do nothing!
+			#pause()
+		else:	
+			# New account exists, must be created already.
 			if opt.test:
-				print 'SKIPPED: account create:', username
+				print 'SKIPPED: account create:', usr.usertype, usr.uid
 
 	#------------#
 	# sync_renew #
@@ -807,73 +915,69 @@ def sync():
 	print '\n===> start sync_renew'
 	pause()
 
-	# First find out which users we have to reset passwords for.
-	#
-	fd = open(opt.rrslog, 'r')
-	for line in fd.readlines():
-		tlog = line.split(':')
+	if not os.path.isdir('renewal_mailed'):
+		os.mkdir('renewal_mailed')
+
+	for newuid in udb.list_paid_non_newbies():
+		action = 0
+		olduid = user_rename_reverse.get(newuid, newuid)
+		if not old_ldap.has_key(olduid):
+			print 'WARNING: Existing non newbie user', newuid, 'not in previous copy of ldap tree!'
+			continue
+
+		newusr = RBUser(uid = newuid)
+		udb.get_user_byname(newusr)
 		
-		# tlog[7] denotes if a new password is needed
-		#
-		if tlog[4] == 'renew' and tlog[7] == '1':
-			# Traverse user_rename_map like a linked list to find
-			# the current username in case the original was
-			# renamed. This map is setup during the sync_rename
-			# step.
-			#
-			cur = tlog[5]
-			while user_rename_map.has_key(cur):
-				cur = user_rename_map[cur]
-
-			# Have a reverse map so we can map from current
-			# username back to the original..
-			#
-			if cur != tlog[5]:
-				user_rename_reverse_map[cur] = tlog[5]
-
-			# Flag this user for a new password.
-			#
-			reset_password[cur] = 1
-	fd.close()
-
-	# Now 'renew' each user.
-	#
-	for username in udb.renewals_list():
 		try:
-			pwd.getpwnam(username)
-		except KeyError:
-			# Accounts should have been renamed beforehand so we
+			acc.check_account_byname(newusr)
+		except RBFatalError:
+			# Accounts should be renamed & converted by now, so we
 			# should never get here!
 			#
-			print "SKIPPED: User '$username' missing account"
-		else:
-			usr = RBUser(username = username)
-			# Don't catch exception as user is known to exist.
-			udb.get_user_byname(usr)
+			print "SKIPPED: User", newuid, "missing account. Earlier rename/conversion not completed?"
+			continue
 
-			# Get original username if user was renamed.
-			if user_rename_reverse_map.has_key(username):
-				oldusername = user_rename_reverse_map[username]
-			else:
-				oldusername = username
+		if not udb.valid_shell(newusr.loginShell):
+			newusr.loginShell = udb.get_backup_shell(olduid)
+			print 'Account shell reset for:', newuid, '(%s)' % newusr.loginShell
+			udb.set_shell(newusr)
+			action = 1
 
-			if not acc.valid_shell(acc.get_shell(username)):
-				print 'Account shell reset for', username
-				acc.reset_shell(username)
-		
+		if not os.path.exists('renewal_mailed/%s' % newusr.uid):
 			# Set a new password if they need one.
 			#
-			if reset_password.has_key(username):
-				usr.passwd = acc.mkpasswd()
-				print 'Account password reset for %s password: %s' % (username, usr.passwd)
-				acc.setpasswd(username, usr.passwd)
-				print 'User mailed:', usr.email
-				mailuser(usr)
+			if reset_password.get(newuid):
+				newusr.passwd = rbconfig.gen_passwd()
+				print 'Account password reset for %s password: %s' % (newuid, newusr.passwd)
+				udb.set_passwd(newusr)
+				action = 1
 
-	print '\nsync completed.'
+			# Send a mail to people who renewed. All renewals should have
+			# an entry in reset_password i.e. 0 or 1.
+			#
+			if reset_password.has_key(newuid):
+				print 'User mailed:', newusr.uid, '(%s)' % newusr.altmail
+				mailuser(newusr)
+				action = 1
+				
+			# Flag this user as mailed so we don't do it again if
+			# sync is rerun.
+			#
+			if not opt.test:
+				open('renewal_mailed/%s' % newusr.uid, 'w').close()
+		elif opt.test:
+			print 'SKIPPED: User mailed:', newusr.uid
+
+		#if action:
+		#	pause()
+
+	print
+	print 'sync completed.'
 
 def sync_dcu_info():
 	"""Interactive update of user database using dcu database information."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	print 'Comparing user and DCU databases. NOTE: please be patient'
 	print 'this takes some time...\n'
@@ -886,47 +990,46 @@ def sync_dcu_info():
 # BATCH INFORMATION COMMANDS                                                  #
 #-----------------------------------------------------------------------------#
 
-def newbies_list():
+def list_newbies():
 	"""List all paid newbies."""
 
-	for username in udb.newbies_list():
+	for username in udb.list_paid_newbies():
 		print username
 		
-def renewals_list():
+def list_renewals():
 	"""List all paid renewals (non-newbie)."""
 
-	for username in udb.renewals_list():
+	for username in udb.list_paid_non_newbies():
 		print username
 
-def freename_list():
+def list_freename():
 	"""List all usernames that are taken."""
 
 	for username in udb.freename_list():
 		print username
 
-def unpaid_list():
+def list_unpaid():
 	"""Print list of all non-renewed users."""
 
-	for username in udb.unpaid_list():
+	for username in udb.list_unpaid():
 		print username
 
-def unpaid_list_normal():
+def list_unpaid_normal():
 	"""Print list of all normal non-renewed users."""
 
-	for username in udb.unpaid_list_normal():
+	for username in udb.list_unpaid_normal():
 		print username
 
-def unpaid_list_reset():
-	"""Print list of all normal non-renewed users with reset shells."""
+def list_unpaid_reset():
+	"""Print list of all normal non-renewed users with reset shells (i.e. not expired)."""
 	
-	for username in udb.unpaid_list_normal():
-		if acc.get_shell(username) != rbconfig.expired_shell:
-			print username
+	for username in udb.list_unpaid_reset():
+		print username
 
-def unpaid_list_grace():
+def list_unpaid_grace():
 	"""Print list of all grace non-renewed users."""
 
-	for username in udb.unpaid_list_grace():
+	for username in udb.list_unpaid_grace():
 		print username
 
 #-----------------------------------------------------------------------------#
@@ -935,6 +1038,8 @@ def unpaid_list_grace():
 
 def newyear():
 	"""Prepare database for start of new academic year."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	# Set options for override & test mode.
 	udb.setopt(opt)
@@ -950,8 +1055,8 @@ def unpaid_warn():
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	for username in udb.unpaid_list():
-		usr = RBUser(username = username)
+	for username in udb.list_unpaid():
+		usr = RBUser(uid = username)
 		udb.get_user_byname(usr)
 		print "Warned user:", username
 		mail_unpaid(usr)
@@ -963,10 +1068,9 @@ def unpaid_disable():
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	for username in udb.unpaid_list_normal():
-		if acc.get_shell(username) != rbconfig.expired_shell:
-			print "Account disabled:", username
-			acc.set_shell(username, rbconfig.expired_shell)
+	for username in udb.list_unpaid_reset():
+		print "Account disabled:", username
+		udb.set_shell(RBUser(uid = username, loginShell = rbconfig.shell_expired))
 	
 def unpaid_delete():
 	"""Delete all grace non-renewed users."""
@@ -975,11 +1079,13 @@ def unpaid_delete():
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	for username in udb.unpaid_list_grace():
+	for username in udb.list_unpaid_grace():
+		usr = RBUser(uid = username)
+		udb.get_user_byname(usr)
 		print 'User deleted:', username
-		udb.delete(username)
+		udb.delete(usr)
 		print 'Account deleted:', username
-		acc.delete(username)
+		acc.delete(usr)
 
 #-----------------------------------------------------------------------------#
 # MISCELLANEOUS COMMANDS                                                      #
@@ -987,6 +1093,8 @@ def unpaid_delete():
 
 def checkdb():
 	"""Check database for inconsistencies."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	# First make sure all Unix accounts are in the userdb. Also check
 	# their group/usertype match (ignore differences for the system
@@ -1004,7 +1112,7 @@ def checkdb():
 				print hdr
 				hdr = None
 			print "%-*s MISSING from userdb  (%-*s)" % (pw[0], rbconfig.maxlen_uname, group, rbconfig.maxlen_group),
-			if not os.access('%s/%s' % (rbconfig.signaway_state_dir, pw[0]), os.F_OK):
+			if not os.access('%s/%s' % (rbconfig.dir_signaway_state, pw[0]), os.F_OK):
 				print '[never logged in]'
 			else:
 				print
@@ -1026,14 +1134,16 @@ def checkdb():
 				print hdr
 				hdr = None
 			print "%-8s MISSING unix account (%-8s)" % (username, usr.usertype)
-		if usr.usertype in ('member', 'staff', 'committe') and not re.search(r'.+@.*dcu\.ie', usr.email, re.I):
+		if usr.usertype in ('member', 'staff', 'committe') and not re.search(r'.+@.*dcu\.ie', usr.altmail, re.I):
 			if hdr:
 				print hdr
 				hdr = None
-			print "%-8s does not have dcu email address: %s" % (username, usr.email)
+			print "%-8s does not have dcu email address: %s" % (username, usr.altmail)
 
 def stats():
 	"""Show database and account statistics."""
+
+	raise RBFatalError("NOT IMPLEMENTED YET")
 
 	if not opt.aconly:
 		print header('User database stats')
@@ -1042,6 +1152,15 @@ def stats():
 		print header('Account stats')
 		acc.stats()
 
+def create_uidNumber():
+	"""Fine next available uidNumber and write it out to uidNumber text file."""
+
+	n = udb.uidNumber_findmax() + 1
+	print 'Next available uidNumber:', n
+	fd = open(rbconfig.file_uidNumber, 'w')
+	fd.write('%s\n' % n)
+	fd.close()
+	
 #-----------------------------------------------------------------------------#
 # USER INPUT FUNCTIONS                                                        #
 #-----------------------------------------------------------------------------#
@@ -1191,17 +1310,18 @@ Subject: Your RedBrick Account
 To: %s
 Reply-To: admin-request@redbrick.dcu.ie
 
-Welcome to RedBrick, the DCU Networking Society!
+""" % usr.altmail)
+	if usr.newbie:
+		fd.write("Welcome to RedBrick, the DCU Networking Society! Thank you for joining.")
+	else:
+		fd.write("Welcome back to RedBrick, the DCU Networking Society! Thank you for renewing.")
+	fd.write("\n\nYour RedBrick Account details are:\n\n")
 
-Your RedBrick Account details are:
-
-""" % usr.email)
-
-	fd.write('%21s: %s\n' % ('username', usr.username))
+	fd.write('%21s: %s\n' % ('username', usr.uid))
 	if usr.passwd:
 		fd.write('%21s: %s\n\n' % ('password', usr.passwd))
 	fd.write('%21s: %s\n' % ('account type', usr.usertype))
-        fd.write('%21s: %s\n' % ('name', usr.name))
+        fd.write('%21s: %s\n' % ('name', usr.cn))
 	if usr.id != None:
 		fd.write('%21s: %s\n' % ('id number',  usr.id))
 	if usr.course:
@@ -1212,12 +1332,15 @@ Your RedBrick Account details are:
 	fd.write(
 """
 your RedBrick webpage: http://www.redbrick.dcu.ie/~%s
-  your RedBrick email: %s@RedBrick.DCU.ie
+  your RedBrick email: %s@redbrick.dcu.ie
 
-Information on how to login is at:
+You can find out how to login at:
   http://www.redbrick.dcu.ie/help/login
+""" % (usr.uid, usr.uid))
 
-We recommend that you change your password as soon as you login!
+	fd.write(
+"""
+We recommend that you change your password as soon as you login.
 
 Problems with your password or wish to change your username? Contact:
   admin-request@redbrick.dcu.ie
@@ -1227,8 +1350,8 @@ Problems using RedBrick in general or not sure what to do? Contact:
 
 Have fun!
 
-  - RedBrick Admin Team <admins@redbrick.dcu.ie>
-""" % (usr.username, usr.username))
+  - RedBrick Admin Team
+""")
 
 	sendmail_close(fd)
 
@@ -1240,10 +1363,10 @@ def mail_unpaid(usr):
 """From: RedBrick Admin Team <admins@redbrick.dcu.ie>
 Subject: Time to renew your RedBrick account!
 To: %s@redbrick.dcu.ie
-"""  % usr.username)
+"""  % usr.uid)
 
-	if usr.email.lower().find('%s@redbrick.dcu.ie' % usr.username) == -1:
-		print >> fd, 'Cc:', usr.email
+	if usr.altmail.lower().find('%s@redbrick.dcu.ie' % usr.uid) == -1:
+		print >> fd, 'Cc:', usr.altmail
 
 	fd.write(
 """Reply-To: accounts@redbrick.dcu.ie
@@ -1251,45 +1374,38 @@ To: %s@redbrick.dcu.ie
 Hey there,
 
 It's that time again to renew your RedBrick account!
+Membership prices, as set by the SFC, are as follows:
 
-Members and Staff
------------------
-All you need to do is find one of the members on the committee and pay
-the ¤2.50 fee. If you have left DCU, you should be applying for
-associate membership instead (see below).
+  Members      ¤4
+  Associates   ¤6
+  Staff        ¤8   
+  Guests      ¤10
 
-Associates and Guests
----------------------
-If you've left DCU or are currently an associate/guest, you'll need to
-pay the ¤6.50 fee in one of two ways: meet up with one of the members of
-the committee or alternatively, pay the money directly into the RedBrick
-bank account. Details are on the website here:
+Note: if you have left DCU, you need to apply for associate membership.
+
+Details of how to pay are on our website here:
 
 http://www.redbrick.dcu.ie/help/joining/
-
-You may also be interested in our special 5 year membership offer for
-associates - this is available at a discounted price of ¤26.
 
 Please Note!
 ------------""")
 
-	if usr.years_paid == 0:
+	if usr.yearsPaid == 0:
 		fd.write(
 """
-If you do not renew within the following month, your account will be
-disabled at the start of December. Your account will remain on the
-system however for a grace period of one year - you just won't be able
-to login. So don't worry, it won't be deleted any time soon! You can
-renew at any time during the year.
+If you do not renew, your account will be disabled. Your account will
+remain on the system for a grace period of a year - you just won't be
+able to login. So don't worry, it won't be deleted any time soon! You
+can renew at any time during the year.
 """)
 	else:
 		fd.write(
 """
 If you do not renew within the following month, your account WILL BE
-DELETED at the start of Decemeber. This is because you were not recorded
-as having paid for last year and as such are nearing the end of your one
-year 'grace' period to renew. Please make sure to renew as soon as
-possible otherwise please contact us at: committee@redbrick.dcu.ie.
+DELETED at the start of the new year. This is because you were not
+recorded as having paid for last year and as such are nearing the end of
+your one year 'grace' period to renew. Please make sure to renew as soon
+as possible otherwise please contact us at: accounts@redbrick.dcu.ie.
 """)
 	fd.write(
 """
@@ -1303,7 +1419,7 @@ For your information, your current RedBrick account details are:
          account type: %s
                  name: %s
     alternative email: %s
-""" % (usr.username, usr.usertype, usr.name, usr.email))
+""" % (usr.uid, usr.usertype, usr.cn, usr.altmail))
 
 	if usr.id != None:
 		fd.write('%21s: %s\n' % ('id number',  usr.id))
@@ -1317,7 +1433,7 @@ For your information, your current RedBrick account details are:
 If any of the above details are wrong, please correct them when you
 renew!
 
-  - RedBrick Admin Team <admins@redbrick.dcu.ie>
+  - RedBrick Admin Team
 """)
 	sendmail_close(fd)
 
@@ -1341,7 +1457,7 @@ def sendmail_open():
 		print >> sys.stderr, header('Email message that would be sent')
 		return sys.stderr
 	else:
-		return os.popen('/usr/sbin/sendmail', 'w')
+		return os.popen('%s -t -i' % rbconfig.command_sendmail, 'w')
 
 def sendmail_close(fd):
 	"""Close sendmail file descriptor."""
@@ -1357,7 +1473,7 @@ def get_username(usr, check_user_exists = 1):
 	"""Get an existing username."""
 
 	if len(opt.args) > 0 and opt.args[0]:
-		usr.uid = opt.username = opt.args.pop(0)
+		usr.uid = opt.uid = opt.args.pop(0)
 		interact = 0
 	else:
 		interact = 1
@@ -1372,8 +1488,7 @@ def get_username(usr, check_user_exists = 1):
 				tmpusr = RBUser(uid = usr.uid)
 				udb.get_user_byname(tmpusr)
 				udb.check_user_byname(usr.uid)
-				# XXX: disabling for Shrapnel FTTB
-				#acc.check_account_byname(tmpusr)
+				acc.check_account_byname(tmpusr)
 		except RBError, e:
 			if not rberror(e, interact):
 				break
@@ -1382,11 +1497,11 @@ def get_username(usr, check_user_exists = 1):
 		if not interact:
 			break
 
-def get_freeusername(usr, check_reserved = 1):
+def get_freeusername(usr):
 	"""Get a new (free) username."""
 
 	if len(opt.args) > 0 and opt.args[0]:
-		usr.uid = opt.args.pop(0)
+		usr.uid = opt.uid = opt.args.pop(0)
 		interact = 0
 	else:
 		interact = 1
@@ -1396,7 +1511,7 @@ def get_freeusername(usr, check_reserved = 1):
 			usr.uid = ask('Enter new username')
 		try:
 			udb.check_username(usr.uid)
-			udb.check_userfree(usr.uid, check_reserved)
+			udb.check_userfree(usr.uid)
 		except RBError, e:	
 			if not rberror(e, interact):
 				break
@@ -1496,17 +1611,17 @@ def get_id(usr):
 def get_name(usr, hints = None):
 	"""Get name (or account description)."""
 
-	if opt.name:
-		usr.name = opt.name
+	if opt.cn:
+		usr.cn = opt.cn
 		interact = 0
 	else:
 		interact = 1
 		
-	defans = usr.name
+	defans = usr.cn
 	
 	while 1:
 		if interact:
-			usr.name = ask("Enter name (or account description)", defans, hints = hints)
+			usr.cn = ask("Enter name (or account description)", defans, hints = hints)
 		try:
 			udb.check_name(usr)
 		except RBError, e:
@@ -1539,8 +1654,6 @@ def get_createaccount(usr):
 	if opt.dbonly != None and opt.aconly != None:
 		return
 	
-	# XXX
-	#if usr.usertype != 'reserved' and not yesno('Create account', not usr.usertype in rbconfig.usertypes_system):
 	if not yesno('Create account', 1):
 		opt.dbonly = 1
 		opt.aconly = 0
@@ -1556,15 +1669,11 @@ def get_setpasswd(usr):
 	#	opt.setpasswd = not opt.dbonly
 	#	return
 
-	# XXX
-	#if usr.usertype != 'reserved':
 	if opt.mode == 'renew':
 		opt.setpasswd = 0
 	else:
 		opt.setpasswd = 1
 	opt.setpasswd = yesno('Set new random password', opt.setpasswd)
-	#else:
-	#	opt.setpasswd = 0
 
 def get_newbie(usr):
 	"""Get newbie boolean."""
@@ -1581,22 +1690,22 @@ def get_years_paid(usr):
 	if not usr.usertype in rbconfig.usertypes_paying and opt.mode != 'update':
 		return
 	
-	if opt.years_paid != None:
-		usr.years_paid = opt.years_paid
+	if opt.yearsPaid != None:
+		usr.yearsPaid = opt.yearsPaid
 		interact = 0
 	else:
 		interact = 1
 
-	if opt.mode == 'add' and usr.years_paid == None:
-		usr.years_paid = 1
-	defans = usr.years_paid
+	if opt.mode == 'add' and usr.yearsPaid == None:
+		usr.yearsPaid = 1
+	defans = usr.yearsPaid
 
 	while 1:
 		if interact:
-			usr.years_paid = ask('Enter number of years paid', defans, optional = opt.mode == 'update' or usr.usertype in ('committe', 'guest'))
+			usr.yearsPaid = ask('Enter number of years paid', defans, optional = opt.mode == 'update' or usr.usertype in ('committe', 'guest'))
 		try:
-			if usr.years_paid:
-				usr.years_paid = int(usr.years_paid)
+			if usr.yearsPaid:
+				usr.yearsPaid = int(usr.yearsPaid)
 				udb.check_years_paid(usr)
 		except (ValueError, RBError), e:
 			if not rberror(e, interact):
@@ -1627,17 +1736,17 @@ def get_year(usr, hints = None):
 def get_email(usr, hints = None):
 	"""Get alternative email address."""
 
-	if opt.email:
-		usr.email = opt.email
+	if opt.altmail:
+		usr.altmail = opt.altmail
 		interact = 0
 	else:
 		interact = 1
 	
-	defans = usr.email
+	defans = usr.altmail
 
 	while 1:
 		if interact:
-			usr.email = ask('Enter email', defans, hints = hints)
+			usr.altmail = ask('Enter email', defans, hints = hints)
 		try:
 			udb.check_email(usr)
 		except RBError, e:
@@ -1724,13 +1833,13 @@ def get_disuser_period(usr):
 def get_disuser_message(usr):
 	"""Get message to display when disusered user tries to log in."""
 
-	file = "%s/%s" % (rbconfig.daft_dir, usr.username)
+	file = "%s/%s" % (rbconfig.dir_daft, usr.uid)
 	editor = os.environ.get('EDITOR', os.environ.get('VISUAL', 'vi'))
 	
 	while 1:
 		if not os.path.isfile(file):
 			fd = open(file, "w")
-			fd.write("The contents of this file will be displayed when %s logs in.\nThe reason for disuserment should be placed here.\n" % (usr.username))
+			fd.write("The contents of this file will be displayed when %s logs in.\nThe reason for disuserment should be placed here.\n" % (usr.uid))
 			fd.close()
 		mtime = os.path.getmtime(file)
 		os.system("%s %s" % (acc.shquote(editor), acc.shquote(file)))
@@ -1753,9 +1862,29 @@ def get_rrslog():
 	
 	while 1:
 		if interact:
-			opt.rrslog = ask('Enter name of RRS logfile')
+			opt.rrslog = ask('Enter name of RRS logfile', rbconfig.file_rrslog)
 		try:
 			open(opt.rrslog, 'r').close()
+		except IOError, e:
+			if not rberror(e, interact):
+				break
+		else:
+			break
+	
+def get_pre_sync():
+	"""Get name of pre_sync file."""
+
+	if len(opt.args) > 0 and opt.args[0]:
+		opt.presync = opt.args.pop(0)
+		interact = 0
+	else:
+		interact = 1
+	
+	while 1:
+		if interact:
+			opt.presync = ask('Enter name of pre_sync file', rbconfig.file_pre_sync)
+		try:
+			open(opt.presync, 'r').close()
 		except IOError, e:
 			if not rberror(e, interact):
 				break

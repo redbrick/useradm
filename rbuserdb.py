@@ -7,7 +7,9 @@
 # System modules
 
 import crypt
+import fcntl
 import math
+import os
 import random
 import re
 import sys
@@ -29,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.1 $'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -38,6 +40,9 @@ __author__  = 'Cillian Sharkey'
 
 class RBUserDB:
 	"""Class to interface with user database."""
+
+	valid_shells = None
+	backup_shells = None
 
 	def __init__(self):
 		"""Create new RBUserDB object."""
@@ -183,7 +188,7 @@ class RBUserDB:
 		else:
 			raise RBFatalError("User with id '%s' does not exist" % usr.id)
 		
-	def get_userinfo_new(self, usr):
+	def get_userinfo_new(self, usr, override = 0):
 		"""Checks if ID already belongs to an existing user and if so
 		raises RBFatalError. Populates RBUser object with data for new
 		user from DCU databases otherwise raises RBWarningError."""
@@ -195,9 +200,9 @@ class RBUserDB:
 			except RBError:
 				pass
 			else:
-				raise RBFatalError("Id '%s' is already registered to %s (%s)" % (usr.id, tmpusr.uid, tmpusr.name))
+				raise RBFatalError("Id '%s' is already registered to %s (%s)" % (usr.id, tmpusr.uid, tmpusr.cn))
 		
-			self.get_dcu_byid(usr)
+			self.get_dcu_byid(usr, override)
 	
 	def get_userinfo_renew(self, usr, curusr = None, override = 0):
 		"""Merge RBUser object with current data from DCU & user
@@ -219,34 +224,36 @@ class RBUserDB:
 		usr.id = usr.id != None and usr.id or curusr.id
 		self.check_renewal_usertype(usr.usertype)
 
-		# Load the dcu data using usertype and ID set in the given usr
-		# or failing that from the current user database.
-		#
-		dcuusr = RBUser(uid = usr.uid, usertype = usr.usertype, id = usr.id)
-		try:
-			self.get_dcu_byid(dcuusr, override = override)
-		except RBError, e:
-			self.rberror(e)
-		
-		# Any attributes not set in the given usr are taken from the
-		# current dcu database or failing that, the current user
-		# database.
-		#
-		# Exceptions to this are:
-		#
-		# - updatedby: caller must give this
-		# - email: for associates as it may be changed from their DCU
-		#   address when they leave DCU so we don't want to
-		#   automatically overwrite it.
-		# - usertype: if get_dcu_byid finds the dcu details, it'll set
-		#   the usertype as appropriate when override option is given,
-		#   so we automatically override this here too.
-		#
-		if dcuusr.usertype:
-			usr.usertype = dcuusr.usertype
-		if usr.usertype == 'associat':
-			dcuusr.altmail = None
-		usr.merge(dcuusr)
+		if usr.usertype in rbconfig.usertypes_dcu:
+			# Load the dcu data using usertype and ID set in the given usr
+			# or failing that from the current user database.
+			#
+			dcuusr = RBUser(uid = usr.uid, usertype = usr.usertype, id = usr.id)
+			try:
+				self.get_dcu_byid(dcuusr, override = override)
+			except RBError, e:
+				self.rberror(e)
+			
+			# Any attributes not set in the given usr are taken from the
+			# current dcu database or failing that, the current user
+			# database.
+			#
+			# Exceptions to this are:
+			#
+			# - updatedby: caller must give this
+			# - email: for associates as it may be changed from their DCU
+			#   address when they leave DCU so we don't want to
+			#   automatically overwrite it.
+			# - usertype: if get_dcu_byid finds the dcu details, it'll set
+			#   the usertype as appropriate when override option is given,
+			#   so we automatically override this here too.
+			#
+			if dcuusr.usertype:
+				usr.usertype = dcuusr.usertype
+			if usr.usertype == 'associat':
+				dcuusr.altmail = None
+			usr.merge(dcuusr)
+
 		usr.merge(RBUser(curusr, updatedby = None))
 
 	def get_userdefaults_new(self, usr):
@@ -305,6 +312,8 @@ class RBUserDB:
 		else:
 			usertype = 'staff'
 
+		# XXX: this overrides committe people (typically back to member)
+		# which probably shouldn't be done?
 		if usertype and (override or not usr.usertype):
 			usr.usertype = usertype
 
@@ -425,6 +434,23 @@ class RBUserDB:
 		else:
 			raise RBFatalError("Group with id '%s' does not exist" % gid)
 
+	def get_backup_shell(self, username):
+		"""Return shell for given user from previous year's LDAP tree
+		or failing that, the default shell."""
+
+		# XXX Use old passwd.backup file FTTB. Should use
+		# ou=<prevyear>,ou=accounts tree instead.
+
+		if self.backup_shells == None:
+			self.backup_shells = {}
+			fd = open(rbconfig.file_backup_passwd, 'r')
+			for line in fd.readlines():
+				pw = line.split(':')
+				self.backup_shells[pw[0]] = pw[6].rstrip()
+			fd.close()
+
+		return self.backup_shells.get(username, rbconfig.shell_default)
+
 	#---------------------------------------------------------------------#
 	# USER DATA SYNTAX CHECK METHODS                                      #
 	#---------------------------------------------------------------------#
@@ -488,7 +514,7 @@ class RBUserDB:
 			if usr.id != None:
 				if type(usr.id) != types.IntType:
 					raise RBFatalError('ID must be an integer')
-				if usr.id < 10000000 or usr.id > 99999999:
+				if usr.id >= 100000000:
 					raise RBFatalError("Invalid ID '%s'" % (usr.id))
 			elif usr.usertype not in ('committe', 'guest'):
 				raise RBFatalError('ID must be given')
@@ -571,18 +597,23 @@ class RBUserDB:
 		self.get_userdefaults_new(usr)
 		self.check_userdata(usr)
 		self.gen_accinfo(usr)
+		self.set_updated(usr)
 
-		# XXX: not sure if this is the right place for this?
+		fd, usr.uidNumber = self.uidNumber_getnext()
+			
 		if not usr.objectClass:
 			usr.objectClass = [usr.usertype] + rbconfig.ldap_default_objectClass
 
 		self.wrapper(self.ldap.add_s, self.uid2dn(usr.uid), self.usr2ldap_add(usr))
-	
-	def delete(self, uid):
+
+		self.uidNumber_savenext(fd, usr.uidNumber + 1)
+		self.uidNumber_unlock(fd)
+
+	def delete(self, usr):
 		"""Delete user from database."""
 
-		self.check_user_byname(uid)
-		self.ldap.delete_s(self.uid2dn(uid))
+		self.check_user_byname(usr.uid)
+		self.wrapper(self.ldap.delete_s, self.uid2dn(usr.uid))
 
 	def renew(self, usr):
 		"""Renew and update RBUser object in database."""
@@ -593,6 +624,7 @@ class RBUserDB:
 		self.check_unpaid(curusr)
 		self.get_userdefaults_renew(usr)
 		self.check_userdata(usr)
+		self.set_updated(usr)
 
 		self.wrapper(self.ldap.modify_s, self.uid2dn(usr.uid), self.usr2ldap_renew(usr))
 
@@ -602,6 +634,7 @@ class RBUserDB:
 		self.get_user_byname(usr)
 		self.check_updatedby(usr.updatedby)
 		self.check_userdata(usr)
+		self.set_updated(usr)
 
 		self.wrapper(self.ldap.modify_s, self.uid2dn(usr.uid), self.usr2ldap_update(usr))
 
@@ -615,6 +648,8 @@ class RBUserDB:
 
 		"""
 
+		self.check_username(usr.uid)
+		self.check_username(newusr.uid)
 		self.get_user_byname(usr)
 		self.check_userfree(newusr.uid)
 		self.check_updatedby(usr.updatedby)
@@ -625,6 +660,7 @@ class RBUserDB:
 
 		# Rename homedir and update the updated* attributes.
 		#
+		self.set_updated(newusr)
 		newusr.homeDirectory = rbconfig.gen_homedir(newusr.uid, usr.usertype)
 		newusr.merge(usr)
 		self.wrapper(self.ldap.modify_s, self.uid2dn(newusr.uid), self.usr2ldap_rename(newusr))
@@ -633,7 +669,7 @@ class RBUserDB:
 		"""Convert a user to a different usertype."""
 
 		self.get_user_byname(usr)
-		self.check_usertype(newusr.usertype)
+		self.check_convert_usertype(newusr.usertype)
 		self.check_updatedby(usr.updatedby)
 
 		# If usertype is one of the pseudo usertypes, change the
@@ -657,6 +693,28 @@ class RBUserDB:
 		newusr.merge(usr)
 
 		self.wrapper(self.ldap.modify_s, self.uid2dn(usr.uid), self.usr2ldap_convert(newusr))
+	
+	def set_passwd(self, usr):
+		"""Set password for given user from the plaintext password in usr.passwd."""
+
+		usr.userPassword = self.userPassword(usr.passwd)
+		self.wrapper(self.ldap.modify_s, self.uid2dn(usr.uid), ((ldap.MOD_REPLACE, 'userPassword', usr.userPassword),))
+
+	def set_shell(self, usr):
+		"""Set shell for given user."""
+
+		self.wrapper(self.ldap.modify_s, self.uid2dn(usr.uid), ((ldap.MOD_REPLACE, 'loginShell', usr.loginShell),))
+
+	def reset_shell(self, usr):
+		"""Reset shell for given user."""
+
+		self.get_user_byname(usr)
+		if self.valid_shell(usr.loginShell):
+			return 0
+
+		usr.loginShell = self.get_backup_shell(usr.uid)
+		self.set_shell(usr)
+		return 1
 
 	#---------------------------------------------------------------------#
 	# SINGLE USER INFORMATION METHODS                                     #
@@ -665,7 +723,7 @@ class RBUserDB:
 	def show(self, usr):
 		"""Show RBUser object information on standard output."""
 
-		for i in usr.attr_list:
+		for i in usr.attr_list_all:
 			if getattr(usr, i) != None:
 				print "%13s: %s" % (i, getattr(usr, i))
 	
@@ -673,33 +731,68 @@ class RBUserDB:
 	# BATCH INFORMATION METHODS                                           #
 	#---------------------------------------------------------------------#
 
+	#-------------------------#
+	# METHODS RETURNING LISTS #
+	#-------------------------#
+	
+	def list_pre_sync(self):
+		"""Return dictionary of all users for useradm pre_sync() dump."""
+
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'objectClass=posixAccount', ('uid', 'homeDirectory', 'objectClass'))
+		tmp = {}
+		for dn, data in res:
+			for i in data['objectClass']:
+				if rbconfig.usertypes.has_key(i):
+					break
+			else:
+				raise RBFatalError("Unknown usertype for user '%s'" % data['uid'][0])
+
+			tmp[data['uid'][0]] = {
+				'homeDirectory': data['homeDirectory'][0],
+				'usertype': i
+			}
+		return tmp	
+
 	def list_users(self):
 		"""Return list of all usernames."""
 
 		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'objectClass=posixAccount', ('uid',))
 		return [data['uid'][0] for dn, data in res]
 
-	def list_renewed(self):
+	def list_paid_newbies(self):
+		"""Return list of all paid newbie usernames."""
+
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid>=1)(newbie=TRUE))', ('uid',))
+		return [data['uid'][0] for dn, data in res]
+
+	def list_paid_non_newbies(self):
 		"""Return list of all paid renewal (non-newbie) usernames."""
 
-		raise RBFatalError("NOT IMLEMENTED YET")
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid>=1)(newbie=FALSE))', ('uid',))
+		return [data['uid'][0] for dn, data in res]
 
-		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid>0)(newbie=FALSE))', ('uid',))
+	def list_non_newbies(self):
+		"""Return list of all non newbie usernames."""
+
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'newbie=FALSE', ('uid',))
 		return [data['uid'][0] for dn, data in res]
 
 	def list_newbies(self):
-		"""Return list of all paid newbie usernames."""
+		"""Return list of all newbie usernames."""
 
-		raise RBFatalError("NOT IMLEMENTED YET")
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'newbie=TRUE', ('uid',))
+		return [data['uid'][0] for dn, data in res]
 
-		self.cur.execute("SELECT username FROM users WHERE years_paid > 0 AND newbie = 't'")
-		return [i[0] for i in self.cur.fetchall()]
+	def list_groups(self):
+		"""Return list of all groups."""
 
-	def list_reserved_all(self):
-		"""Return list of all usernames that are taken or reserved."""
+		res = self.ldap.search_s(rbconfig.ldap_group_tree, ldap.SCOPE_ONELEVEL, 'objectClass=posixGroup', ('cn',))
+		return [data['cn'][0] for dn, data in res]
 
-		#XXX: doesn't return LDAP groups..
-		res = self.ldap.search_s(rbconfig.ldap_tree, ldap.SCOPE_SUBTREE, '(|(objectClass=posixAccount)(objectClass=reserved))', ('uid',))
+	def list_reserved(self):
+		"""Return list of all reserved entries."""
+
+		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, 'objectClass=reserved', ('uid',))
 		return [data['uid'][0] for dn, data in res]
 
 	def list_reserved_static(self):
@@ -714,29 +807,65 @@ class RBUserDB:
 		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, '(&(objectClass=reserved)(!(flag=static)))', ('uid',))
 		return [data['uid'][0] for dn, data in res]
 
+	def list_reserved_all(self):
+		"""Return list of all usernames that are taken or reserved.
+		
+		This includes all account usernames, all reserved usernames and
+		all groupnames."""
+
+		return self.list_users() + self.list_reserved() + self.list_groups()
+
 	def list_unpaid(self):
 		"""Return list of all non-renewed users."""
 		
-		raise RBFatalError("NOT IMLEMENTED YET")
-
-		self.cur.execute('SELECT username FROM users WHERE years_paid <= 0')
-		return [i[0] for i in self.cur.fetchall()]
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'yearsPaid<=0', ('uid',))
+		return [data['uid'][0] for dn, data in res]
 
 	def list_unpaid_normal(self):
 		"""Return list of all normal non-renewed users."""
 
-		raise RBFatalError("NOT IMLEMENTED YET")
-
-		self.cur.execute('SELECT username FROM users WHERE years_paid = 0')
-		return [i[0] for i in self.cur.fetchall()]
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'yearsPaid=0', ('uid',))
+		return [data['uid'][0] for dn, data in res]
 
 	def list_unpaid_grace(self):
 		"""Return list of all grace non-renewed users."""
 
-		raise RBFatalError("NOT IMLEMENTED YET")
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'yearsPaid<=-1', ('uid',))
+		return [data['uid'][0] for dn, data in res]
 
-		self.cur.execute('SELECT username FROM users WHERE years_paid < 0')
-		return [i[0] for i in self.cur.fetchall()]
+	def list_unpaid_reset(self):
+		"""Return list of all normal non-renewed users with reset shells (i.e. not expired)."""
+
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid=0)(!(loginShell=%s)))' % rbconfig.shell_expired, ('uid',))
+		return [data['uid'][0] for dn, data in res]
+
+	#--------------------------------#
+	# METHODS RETURNING DICTIONARIES #
+	#--------------------------------#
+	
+	def dict_reserved_desc(self):
+		"""Return dictionary of all reserved entries with their
+		description."""
+
+		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, 'objectClass=reserved', ('uid', 'description'))
+		tmp = {}
+		for dn, data in res:
+			tmp[data['uid'][0]] = data['description'][0]
+		return tmp
+
+	def dict_reserved_static(self):
+		"""Return dictionary of all reserved entries with their
+		description."""
+
+		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, 'objectClass=reserved', ('uid', 'description'))
+		tmp = {}
+		for dn, data in res:
+			tmp[data['uid'][0]] = data['description'][0]
+		return tmp
+
+	#----------------------------------#
+	# METHODS RETURNING SEARCH RESULTS #
+	#----------------------------------#
 
 	def search_users_byusername(self, uid):
 		"""Search user database by username and return results
@@ -875,10 +1004,100 @@ class RBUserDB:
 		saltchars = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 		return crypt.crypt(password, saltchars[random.randrange(len(saltchars))] + saltchars[random.randrange(len(saltchars))])
 
+	def userPassword(self, password):
+		"""Return string suitable for LDAP userPassword attribute based on given plaintext password."""
+
+		if password:
+			return "{CRYPT}" + self.crypt(password)
+
+		# XXX: is this correct way to disable password?
+		return "{CRYPT}*"
+
 	def uid2dn(self, uid):
 		"""Return full Distinguished Name (DN) for given username."""
 
 		return "uid=%s,%s" % (uid, rbconfig.ldap_accounts_tree)
+
+	def uidNumber_findmax(self):
+		"""Return highest uidNumber found in LDAP accounts tree.
+		
+		This is only used to create the uidNumber file, the
+		uidNumber_readnext() function should be used for getting the
+		next available uidNumber."""
+
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'objectClass=posixAccount', ('uidNumber',))
+
+		maxuid = -1 
+		for i in res:
+			tmp = int(i[1]['uidNumber'][0])
+			if tmp > maxuid:
+				maxuid = tmp
+
+		return maxuid
+
+	def uidNumber_getnext(self):
+		"""Get the next available uidNumber for adding a new user.
+		
+		Locks uidNumber file, reads number. Returns (file descriptor,
+		uidNumber). uidNumber_savenext() must be called once the
+		uidNumber is used successfully."""
+
+		fd = os.open(rbconfig.file_uidNumber, os.O_RDWR)
+		retries = 0
+
+		while 1:
+			try:
+				fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+			except IOError:
+				retries += 1
+				if retries == 20:
+					raise RBFatalError('Could not lock uidNumber.txt file after 20 attempts. Please try again!')
+				time.sleep(0.5)
+			else:
+				break
+
+		n = int(os.read(fd, 32))
+
+		return fd, n
+
+	def uidNumber_savenext(self, fd, uidNumber):
+		"""Save next uidNumber.
+		
+		Writes uidNumber to file descriptor fd, which must be the one
+		returned by uidNumber_getnext(). Does not write anything if in
+		test mode."""
+		
+		if not self.opt.test:
+			os.lseek(fd, 0, 0)
+			os.write(fd, '%s\n' % uidNumber)
+			os.fdatasync(fd)
+	
+	def uidNumber_unlock(self, fd):
+		"""Unlock uidNumber text file.
+
+		This must be called after the last call to uidNumber_save() so
+		that other processes can now obtain a lock on this file.
+		The file will be unlocked after process termination though."""
+
+		os.close(fd)
+
+	def valid_shell(self, shell):
+		"""Check if given shell is valid by checking against /etc/shells."""
+
+		if not shell:
+			return 0
+		
+		if self.valid_shells == None:
+			self.valid_shells = {}
+			re_shell = re.compile(r'^([^\s#]+)')
+			fd = open(rbconfig.file_shells, 'r')
+			for line in fd.readlines():
+				res = re_shell.search(line)
+				if res:
+					self.valid_shells[res.group(1)] = 1
+			fd.close()
+			
+		return self.valid_shells.has_key(shell)
 
 	#--------------------------------------------------------------------#
 	# INTERNAL METHODS                                                   #
@@ -889,7 +1108,6 @@ class RBUserDB:
 		
 		This list is used in LDAP add queries."""
 
-		now = time.strftime('%Y-%m-%d %H:%M:%S%z')
 		tmp = [
 			('uid', usr.uid),
 			('objectClass', usr.objectClass),
@@ -897,9 +1115,9 @@ class RBUserDB:
 			('cn', usr.cn),
 			('altmail', usr.altmail),
 			('updatedby', usr.updatedby),
-			('updated', now),
+			('updated', usr.updated),
 			('createdby', usr.updatedby),
-			('created', now),
+			('created', usr.created),
 			('uidNumber', str(usr.uidNumber)),
 			('gidNumber', str(usr.gidNumber)),
 			('gecos', usr.gecos),
@@ -926,13 +1144,12 @@ class RBUserDB:
 		
 		This list is used in LDAP modify queries for renewing."""
 
-		now = time.strftime('%Y-%m-%d %H:%M:%S%z')
 		tmp = [
 			(ldap.MOD_REPLACE, 'newbie', usr.newbie and 'TRUE' or 'FALSE'),
 			(ldap.MOD_REPLACE, 'cn', usr.cn),
 			(ldap.MOD_REPLACE, 'altmail', usr.altmail),
 			(ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
-			(ldap.MOD_REPLACE, 'updated', now),
+			(ldap.MOD_REPLACE, 'updated', usr.updated),
 		]
 		if usr.id != None:
 			tmp.append((ldap.MOD_REPLACE, 'id', str(usr.id)))
@@ -957,7 +1174,7 @@ class RBUserDB:
 			(ldap.MOD_REPLACE, 'cn', usr.cn),
 			(ldap.MOD_REPLACE, 'altmail', usr.altmail),
 			(ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
-			(ldap.MOD_REPLACE, 'updated', time.strftime('%Y-%m-%d %H:%M:%S%z')),
+			(ldap.MOD_REPLACE, 'updated', usr.updated)
 		]
 		if usr.id != None:
 			tmp.append((ldap.MOD_REPLACE, 'id', str(usr.id)))
@@ -978,13 +1195,10 @@ class RBUserDB:
 		This list is used in LDAP modify queries for renaming."""
 
 		return (
-			(ldap.MOD_REPLACE, 'gidNumber', str(usr.gidNumber)),
 			(ldap.MOD_REPLACE, 'homeDirectory', usr.homeDirectory),
 			(ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
-			(ldap.MOD_REPLACE, 'updated', time.strftime('%Y-%m-%d %H:%M:%S%z')),
+			(ldap.MOD_REPLACE, 'updated', usr.updated)
 		)
-
-		return tmp
 	
 	def usr2ldap_convert(self, usr):
 		"""Return a list of (type, attribute) pairs for given user.
@@ -996,34 +1210,37 @@ class RBUserDB:
 			(ldap.MOD_REPLACE, 'gidNumber', str(usr.gidNumber)),
 			(ldap.MOD_REPLACE, 'homeDirectory', usr.homeDirectory),
 			(ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
-			(ldap.MOD_REPLACE, 'updated', time.strftime('%Y-%m-%d %H:%M:%S%z'))
+			(ldap.MOD_REPLACE, 'updated', usr.updated)
 		)
 		
 	def gen_accinfo(self, usr):
 		if not usr.userPassword:
-			if not usr.passwd and self.opt.setpasswd:
-				usr.passwd = rbconfig.gen_passwd()
-			if usr.passwd:
-				usr.userPassword = "{CRYPT}" + self.crypt(usr.passwd)
-			else:
-				# XXX: is this correct way to disable password?
-				usr.userPassword = "{CRYPT}*"
+			usr.userPassword = self.userPassword(usr.passwd)
 		if not usr.homeDirectory:
 			usr.homeDirectory = rbconfig.gen_homedir(usr.uid, usr.usertype)
-		if usr.uidNumber == None:
-			# XXX: need way of auto-incrementing UIDs. For RRS,
-			# we're just setting it to -1 and assigning them later
-			# when the accounts are being created.
-			#
-			usr.uidNumber = -1
 		if usr.gidNumber == None:
 			usr.gidNumber = self.get_gid_byname(usr.usertype)
 		if not usr.gecos:
-			usr.gecos = usr.cn
+			# Hide a user's identity for paying accounts.
+			#
+			if usr.usertype in rbconfig.usertypes_paying:
+				usr.gecos = usr.uid
+			else:
+				usr.gecos = usr.cn
 		if not usr.loginShell:
-			usr.loginShell = rbconfig.default_shell
+			usr.loginShell = rbconfig.shell_default
 		if not usr.host:
 			usr.host = rbconfig.ldap_default_hosts
+
+	def set_updated(self, usr):
+		"""Set updated in given usr to current local time.
+
+		Also sets created and createdby if not set in given usr."""
+
+		usr.updated = time.strftime('%Y-%m-%d %H:%M:%S')
+		if not usr.created:
+			usr.created = usr.updated
+			usr.createdby = usr.updatedby
 
 	def set_user(self, usr, res):
 		"""Populate RBUser object with information from LDAP query.
