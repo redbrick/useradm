@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -46,5 +46,7 @@ class RBOpt:
 		self.yearsPaid = None
 		self.birthday = None
 		self.quiet = None
+		self.rrslog = None
+		self.presync = None
 		# Used by rrs.
 		self.action = None
