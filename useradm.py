@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -531,7 +531,7 @@ def resetpw():
 	udb.get_user_byname(usr)
 	usr.passwd = rbconfig.gen_passwd()
 
-	if usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
+	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
 		print 'ABORTING.'
 		return
 
@@ -554,7 +554,7 @@ def resetsh():
 	get_username(usr)
 	udb.get_user_byname(usr)
 
-	if usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
+	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
 		print 'ABORTING.'
 		return
 	
