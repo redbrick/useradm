@@ -30,7 +30,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.1 $'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 cmds = {
@@ -548,7 +548,7 @@ def renew():
 		rrs_log_add('rename-%s:%s:%s' % (usr.newbie and 'new' or 'existing', usr.uid, newusr.uid))
 
 	okay = 1
-	mode = 'card'
+	opt.mode = 'card'
 
 def update():
 	"""Update user."""
