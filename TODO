@@ -1,4 +1,11 @@
-$Id: TODO,v 1.1 2003/03/28 16:31:46 cns Exp cns $
+$Id: TODO,v 1.2 2003/10/07 19:36:53 cns Exp cns $
+
+===========
+OTHER STUFF
+===========
+
+- add previous year (ou=2003,ou=accounts?) tree
+  automate this!
 
 ===========
 python_ldap
@@ -7,6 +14,7 @@ python_ldap
 - LDAP types -> python types: currently everything returned as strings, need:
   newbie: boolean
   yearsPaid, id, uidNumber, gidNumber: int
+  DONE: "converted" on the fly
 
 ====
 LDAP
@@ -17,23 +25,25 @@ LDAP
   anyone can directly connect to ldap to try for correct passwords with
   no delay involved for incorrect passwords. this should be logged..
 
-- capitalise:
-  altmail -> altMail
-  updateby -> updatedBy
-  createdby -> createdBy
-
 - add 'ldap' as a reserved type, any other ldap 'keywords' ?
+  DONE: ldap is a group
 
 - reserved & system usertypes (i.e. objectClass) no longer used in accounts
   tree ?
+  DONE: webgroup was system, converted to redbrick
 
 - reserved description should be compulsory
+  DONE
 
 - birthday: lose the time, not needed
   created & updated: drop the splitsecond precision, make sure timezone is set
   in all values, i.e. +00 or +01
+  DONE
 
-- home directories not consistent! also, vhosts should be in /webtree/vhosts ?
+- home directories not consistent! to be part of checkdb
+  
+  also, vhosts should be in /webtree/vhosts ?
+  DONE?
 
 for dn,attr in ldp.search_s('ou=accounts,o=redbrick',ldap.SCOPE_ONELEVEL, 'objectClass=posixaccount', ('uid','homeDirectory', 'objectClass')):
  if attr['homeDirectory'][0] != acc.gen_homedir(attr['uid'][0], attr['objectClass'][0]):
@@ -45,9 +55,9 @@ Python
 
 - python % format printing of values as a boolean e.g.
   print '%b %b' % (1,0) -> "true false"
-  coming in 2.3 ?
+  DONE: this is in 2.3
 
-- disable readline file completion
+- ability to toggle readline file completion
 
 =======
 General
@@ -56,9 +66,11 @@ General
 - mailman: possible to rename user on a list ? i.e. to preserve subscription
   information
 
-- remove all rename/convert symlinks and stop using them ?
+- remove all rename/convert symlinks and stop using them
+  DONE
 
-- does quorum include cmte?
+- does quorum include cmte
+  YES, DAMMIT
 
 - Club/Socs/Projects to be subject to years_paid (but don't actually pay).
   Helps keep track of them. Or don't bother with payment info, have custom
