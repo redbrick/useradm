@@ -1,4 +1,12 @@
-$Id: TODO,v 1.2 2003/10/07 19:36:53 cns Exp cns $
+$Id: TODO,v 1.3 2003/10/24 14:52:51 cns Exp cns $
+
+=======
+useradm
+=======
+
+- rebuild_reserved, renew, checkdb, add/modify/delete reserved entries
+
+- have efficient batch mode that skips unneeded "user exists" checks
 
 ===========
 OTHER STUFF
