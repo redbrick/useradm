@@ -6,14 +6,19 @@
 
 # System modules
 
+import os
 import random
 
 #---------------------------------------------------------------------#
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
+
+# Find out where the rrs directory is.
+
+dir_rrs = (os.path.dirname(__file__) or '.') + '/'
 
 # Maximum length of usernames and groups.
 
@@ -66,9 +71,9 @@ dir_mailman = '/local/mailman'
 
 # Filenames.
 
-file_uidNumber = 'uidNumber.txt'
-file_pre_sync = 'presync.txt'
-file_rrslog = 'rrs.log'
+file_uidNumber = dir_rrs + 'uidNumber.txt'
+file_pre_sync = dir_rrs + 'presync.txt'
+file_rrslog = dir_rrs + 'rrs.log'
 file_shells = '/etc/shells'
 file_backup_passwd = '/var/backups/passwd.pre-expired'
 shell_default = '/usr/local/shells/zsh'
