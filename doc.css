@@ -1,0 +1,43 @@
+/*
+ * Style sheet for RRS documentation.
+ *
+ * $Id: doc.css,v 1.1 2003/03/26 10:24:19 cns Exp $
+ */
+
+body {
+	background-color: white;
+	color: black;
+}
+
+h1 {
+	background-color: #F0F0F0;
+	color: black;
+	border-top: 1px solid black;
+	border-bottom: 1px solid black;
+	text-align: center;
+}
+
+h2 {
+	border-bottom: 1px solid red;
+	color: darkred;
+	font-family: sans-serif;
+	mmargin-left: 2%;
+}
+
+h3 {
+	border-top: 1px dashed #C0C0C0;
+	border-bottom: 1px dashed #C0C0C0;
+	width: 50%;
+	color: green;
+	font-style: italic;
+	mmargin-left: 4%;
+}
+
+code {
+	font-weight: bold;
+} 
+pre {
+	background-color: #F0F0F0;
+	border: 1px solid black;
+	padding: 5px;
+}

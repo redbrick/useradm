@@ -1,0 +1,20 @@
+$Id$
+
+disable readline file completion
+checkout pypgsql
+
+Database:
+
+- make use of periodic VACUUM ANALYSE for users table
+- does quorum include cmte?
+
+RRS:
+
+- test out with other browsers
+
+General:
+
+- Club/Socs/Projects to be subject to years_paid (but don't actually pay).
+  Helps keep track of them. Or don't bother with payment info, have custom
+  command to mail & disable these accounts at start of every year?
+
