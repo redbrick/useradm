@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -107,14 +107,14 @@ class RBUser:
 				#else:
 				setattr(self, i, None)
 	
-	def merge(self, usr):
+	def merge(self, usr, override = 0):
 		"""Merge attributes from given RBUser object.
 		
-		Set all valid attributes in this object that have no value
-		(None) to the value in the given RBUser object.
-		
+		For each valid attribute in the given usr object that has
+		a value (is not None) set this object (self) to that value
+		if it is currently None or if override is true.
 		"""
 
 		for i in self.attr_list_all:
-			if hasattr(usr, i) and getattr(self, i) == None and getattr(usr, i) != None:
+			if hasattr(usr, i) and (getattr(self, i) == None or override) and getattr(usr, i) != None:
 				setattr(self, i, getattr(usr, i))
