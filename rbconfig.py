@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.4 $'
+__version__ = '$Revision: 1.5 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -83,14 +83,14 @@ shell_expired = '/usr/local/shells/expired'
 
 files_group = (
 	('/etc/group', 'Prodigy'),
-	('/local/share/var/deathray/group', 'Deathray')
+	('/local/share/var/carbon/group', 'Carbon')
 )
 
 # host files: (host file, hostname) pairs.
 
 files_host = (
 	('/etc/hosts', 'Prodigy'),
-	('/local/share/var/deathray/hosts', 'Deathray')
+	('/local/share/var/carbon/hosts', 'Carbon')
 )
 
 # Email alias files.
