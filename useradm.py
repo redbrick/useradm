@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.4 $'
+__version__ = '$Revision: 1.5 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -38,6 +38,7 @@ cmds = {
 	'update':		('Update user', '[username]'),
 	'delete':		('Delete user', '[username]'),
 	'resetpw':		('Set new random password and mail it to user', '[username]'),
+	'setshell':		('Set user\'s shell', '[username [shell]]'),
 	'resetsh':		('Reset user\'s shell', '[username]'),
 	'rename':		('Rename user', '[username]'),
 	'convert':		('Change user to a different usertype', '[username]'),
@@ -68,7 +69,7 @@ cmds = {
 # Command groups
 #
 cmds_single_user = ('add', 'delete', 'renew', 'update', 'rename', 'convert')
-cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser')
+cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser', 'setshell')
 cmds_single_user_info = ('show', 'freename')
 cmds_interactive_batch = ('search', 'sync', 'sync_dcu_info')
 cmds_batch = ('newyear', 'unpaid_warn', 'unpaid_disable', 'unpaid_delete')
@@ -565,7 +566,7 @@ def resetsh():
 	if udb.reset_shell(usr):
 		print 'Account shell reset for', usr.uid, '(%s)' % usr.loginShell
 	else:
-		print 'Account', usr.uid, 'has valid shell.'
+		print 'Account', usr.uid, 'already had valid shell, no action performed.'
 
 def disuser():
 	"""Disuser a user."""
@@ -596,6 +597,26 @@ def reuser():
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
 	acc.setopt(opt)
+
+def setshell():
+	"""Set user's shell."""
+
+	usr = RBUser()
+	get_username(usr)
+	udb.get_user_byname(usr)
+
+	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
+		print 'ABORTING.'
+		return
+
+	get_shell(usr)
+		
+	# End of user interaction, set options for override & test mode.
+	udb.setopt(opt)
+	acc.setopt(opt)
+
+	print 'Account shell set for', usr.uid, '(%s)' % usr.loginShell
+	udb.set_shell(usr)
 
 #-----------------------------------------------------------------------------#
 # SINGLE USER INFORMATION COMMANDS                                            #
@@ -1899,7 +1920,36 @@ def get_pre_sync():
 				break
 		else:
 			break
+
+def get_shell(usr):
+	"""Get user shell."""
+
+	if len(opt.args) > 0 and opt.args[0]:
+		usr.loginShell = opt.args.pop(0)
+		interact = 0
+	else:
+		interact = 1
 	
+	defans = usr.loginShell
+
+	# XXX: gross hack to make dizer happy. preloads /etc/shells so we can
+	# pass it as hints below
+	#
+	udb.valid_shell('fuzz')
+
+	while 1:
+		if interact:
+			usr.loginShell = ask('Enter shell', defans, hints = [defans] + udb.valid_shells.keys())
+		try:
+			# XXX: valid_shell should raise an exception?
+			if not udb.valid_shell(usr.loginShell):
+				raise RBWarningError('Not a valid shell')
+		except RBError, e:
+			if not rberror(e, interact):
+				break
+		else:
+			break
+
 #-----------------------------------------------------------------------------#
 # ERROR HANDLING                                                              #
 #-----------------------------------------------------------------------------#
