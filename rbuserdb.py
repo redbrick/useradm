@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -834,9 +834,9 @@ class RBUserDB:
 		return [data['uid'][0] for dn, data in res]
 
 	def list_unpaid_reset(self):
-		"""Return list of all normal non-renewed users with reset shells (i.e. not expired)."""
+		"""Return list of all non-renewed users with reset shells (i.e. not expired)."""
 
-		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid=0)(!(loginShell=%s)))' % rbconfig.shell_expired, ('uid',))
+		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, '(&(yearsPaid<=0)(!(loginShell=%s)))' % rbconfig.shell_expired, ('uid',))
 		return [data['uid'][0] for dn, data in res]
 
 	#--------------------------------#
