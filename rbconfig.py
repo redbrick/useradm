@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.5 $'
+__version__ = '$Revision: 1.6 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -225,8 +225,11 @@ def gen_quotas(usertype = None):
 	
 	"""
 
+	# XXX: /webtree moved to deathray, on NFS now. Fix this when useradm
+	# is moved to deathray.
+
 	return {
-		'/webtree': (125000, 135000, 20000, 30000)
+		#'/webtree': (125000, 135000, 20000, 30000)
 	}
 
 def gen_extra_user_files(username):
