@@ -12,7 +12,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.1 $'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 # Maximum length of usernames and groups.
@@ -27,7 +27,7 @@ ldap_default_hosts = ['carbon', 'prodigy']
 
 # RedBrick LDAP settings.
 
-ldap_uri = 'ldap://ldap'
+ldap_uri = 'ldap://ldap.internal'
 ldap_root_dn = 'cn=root,ou=ldap,o=redbrick'
 ldap_rootpw_file = '/etc/ldap.secret'
 ldap_tree = 'o=redbrick'
@@ -37,8 +37,6 @@ ldap_reserved_tree = 'ou=reserved,o=redbrick'
 
 # DCU LDAP settings.
 
-# XXX
-#ldap_dcu_uri = 'ldap://ldap'
 ldap_dcu_uri = 'ldap://nds.dcu.ie'
 ldap_dcu_tree = 'o=dcu'
 ldap_dcu_students_tree = 'ou=students,o=dcu'
@@ -47,7 +45,11 @@ ldap_dcu_alumni_tree = 'ou=alumni,o=dcu'
 
 # DNS zones RedBrick is authorative for.
 
-dns_zones = 'redbrick.dcu.ie club.dcu.ie soc.dcu.ie'
+dns_zones = (
+	'redbrick.dcu.ie',
+	'club.dcu.ie',
+	'soc.dcu.ie',
+)
 
 # Mailman list suffixes.
 
@@ -86,10 +88,7 @@ host_files = (
 # Email alias files.
 
 alias_files = (
-	('/etc/mail/aliases', 'Mail alias'),
-	# XXX
-	#('/etc/mail/personal_aliases', 'Personal mail alias'),
-	#('/etc/mail/user_rename_aliases', 'User rename mail alias')
+	('/etc/mail/exim_aliases.txt', 'Mail alias'),
 )
 
 # Extra files that may belong to a user outside of their main storage areas.
