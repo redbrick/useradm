@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision'
+__version__ = '$Revision$'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -34,7 +34,7 @@ class RBOpt:
 		self.username = None
 		self.dbonly = None
 		self.aconly = None
-		self.updated_by = None
+		self.updatedby = None
 		self.newbie = None
 		self.mailuser = None
 		self.usertype = None

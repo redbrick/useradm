@@ -8,6 +8,7 @@
 
 import atexit
 import getopt
+import getpass
 import grp
 import os
 import pwd
@@ -17,12 +18,12 @@ import sys
 
 # 3rd party modules
 
-import pgdb
+#import
 
 # RedBrick modules
 
-from rbaccount import *
 import rbconfig
+from rbaccount import *
 from rberror import *
 from rbopt import *
 from rbuser import *
@@ -160,7 +161,7 @@ def main():
 			opt.aconly = 1
 			opt.dbonly = 0
 		elif o == '-u':
-			opt.updated_by = a
+			opt.updatedby = a
 		elif o == '-f':
 			opt.newbie = 1
 		elif o == '-F':
@@ -203,8 +204,12 @@ def main():
 
 	try:
 		udb.connect()
-	except (pgdb.Error, pgdb.Warning, pgdb._pg.error), e:
+	except ldap.LDAPError, e:
 		error(e, 'Could not connect to user database')
+		# not reached
+	except KeyboardInterrupt:
+		print
+		sys.exit(1)
 		# not reached
 
 	acc = RBAccount()
@@ -222,7 +227,7 @@ def main():
 	except RBError, e:
 		rberror(e)
 		# not reached
-	except pgdb.DatabaseError, e:
+	except ldap.LDAPError, e:
 		error(e)
 		# not reached
 
@@ -270,7 +275,9 @@ def add():
 	
 	usr = RBUser()
 	get_usertype(usr)
-	get_freeusername(usr, not usr.usertype in udb.usertypes_system)
+	# XXX
+	#get_freeusername(usr, not usr.usertype in rbconfig.usertypes_system)
+	get_freeusername(usr)
 
 	while 1:
 		try:
@@ -294,7 +301,7 @@ def add():
 	get_year(usr)
 	get_years_paid(usr)
 	get_birthday(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
 	#
@@ -313,7 +320,7 @@ def add():
 		# a redbrick one then use it to place in their .forward file.
 		#
 		email = None
-		if usr.usertype in udb.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
+		if usr.usertype in rbconfig.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
 			email = usr.email
 
 		print "Account created: %s %s password: %s" % (usr.usertype, usr.username, usr.passwd)
@@ -341,11 +348,11 @@ def delete():
 	acc.setopt(opt)
 
 	if not opt.aconly:
-		print 'User deleted:', usr.username
-		udb.delete(usr.username)
-	if not opt.dbonly:
-		print 'Account deleted:', usr.username
-		acc.delete(usr.username)
+		print 'User deleted:', usr.uid
+		udb.delete(usr.uid)
+	#if not opt.dbonly:
+	#	print 'Account deleted:', usr.username
+	#	acc.delete(usr.username)
 	
 def renew():
 	"""Renew user."""
@@ -395,7 +402,7 @@ def renew():
 	get_year(usr, (curusr.year,))
 	get_years_paid(usr)
 	get_birthday(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -453,7 +460,7 @@ def update():
 	get_year(usr, (newusr.year,))
 	get_years_paid(usr)
 	get_birthday(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -469,18 +476,16 @@ def rename():
 	newusr = RBUser()
 	get_username(usr)
 	get_freeusername(newusr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
 	acc.setopt(opt)
 	
-	if not opt.aconly:
-		print 'User renamed: %s -> %s' % (usr.username, newusr.username)
-		udb.rename(usr.username, newusr.username, usr.updated_by)
-	if not opt.dbonly:
-		print 'Account renamed: %s -> %s' % (usr.username, newusr.username)
-		acc.rename(usr.username, newusr.username)
+	print 'User renamed: %s -> %s' % (usr.uid, newusr.uid)
+	udb.rename(usr, newusr)
+	print 'Account renamed: %s -> %s' % (usr.uid, newusr.uid)
+	acc.rename(usr, newusr)
 
 def convert():
 	"""Convert user."""
@@ -488,7 +493,7 @@ def convert():
 	usr = RBUser()
 	get_username(usr)
 	get_convert_usertype(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -496,7 +501,7 @@ def convert():
 
 	if not opt.aconly:
 		print 'User converted: %s -> %s' % (usr.username, usr.usertype)
-		udb.convert(usr.username, usr.usertype, usr.updated_by)
+		udb.convert(usr.username, usr.usertype, usr.updatedby)
 	if not opt.dbonly:
 		print 'Account converted: %s -> %s' % (usr.username, usr.usertype)
 		acc.convert(usr.username, usr.usertype)
@@ -511,15 +516,15 @@ def resetpw():
 	usr = RBUser()
 	get_username(usr)
 	udb.get_user_byname(usr)
-	usr.passwd = acc.mkpasswd()
+	usr.passwd = rbconfig.gen_passwd()
 	get_mailuser(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
 	acc.setopt(opt)
 
-	print "Account password reset: %s password: %s" % (usr.username, usr.passwd)
-	acc.setpasswd(usr.username, usr.passwd)
+	print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
+	udb.setpasswd(usr.uid, usr.passwd)
 
 	if opt.mailuser:
 		print "User mailed:", usr.email
@@ -545,7 +550,7 @@ def disuser():
 	get_username(usr)
 	get_disuser_period(usr)
 	get_disuser_message(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -558,7 +563,7 @@ def reuser():
 
 	usr = RBUser()
 	get_username(usr)
-	get_updated_by(usr)
+	get_updatedby(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -572,26 +577,23 @@ def show():
 	"""Show user's database and account details."""
 
 	usr = RBUser()
-	get_username(usr, check_user_exists = 0)
+	get_username(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
-	acc.setopt(opt)
 
-	if not opt.aconly:
-		udb.get_user_byname(usr)
-		print header('User Information')
-		udb.show(usr)
-	if not opt.dbonly:
-		print header('Account Information')
-		acc.show(usr.username)
+	udb.get_user_byname(usr)
+	print header('User Information')
+	udb.show(usr)
+	print header('Account Information')
+	acc.show(usr)
 
 def freename():
 	"""Check if a username is free."""
 
 	usr = RBUser()
 	if get_freeusername(usr):
-		print "Username '%s' is free." % (usr.username)
+		print "Username '%s' is free." % (usr.uid)
 
 #-----------------------------------------------------------------------------#
 # BATCH INTERACTIVE COMMANDS                                                  #
@@ -600,11 +602,7 @@ def freename():
 def search():
 	"""Search user and/or DCU databases."""
 
-	pager = None
-	if os.environ.has_key('PAGER'):
-		pager = os.environ['PAGER']
-	if not pager:
-		pager = 'more'
+	pager = os.environ.get('PAGER', 'more')
 
 	username = None
 	if len(opt.args) > 0:
@@ -647,10 +645,10 @@ def show_search_results(res, fd):
 	"""Actual routine to display search results on given output steam."""
 
 	if res:
-		print >> fd, '%-8s %-8s %-8s %-30s %-6s %-4s %s' % ('username', 'usertype', 'id', 'name', 'course', 'year', 'email')
-		print >> fd, '%s %s %s %s %s %s %s' % ('-' * 8, '-' * 8, '-' * 8, '-' * 30, '-' * 6, '-' * 4, '-' * 30)
+		print >> fd, '%-*s %-*s %-8s %-30s %-6s %-4s %s' % (rbconfig.maxlen_uname, 'username', rbconfig.maxlen_group, 'usertype', 'id', 'name', 'course', 'year', 'email')
+		print >> fd, '%s %s %s %s %s %s %s' % ('-' * rbconfig.maxlen_uname, '-' * rbconfig.maxlen_group, '-' * 8, '-' * 30, '-' * 6, '-' * 4, '-' * 30)
 		for username, usertype, id, name, course, year, email in res:
-			print >> fd, "%-8s %-8s %-8s %-30.30s %-6.6s %-4.4s %s" % (username or '-', usertype or '-', id != None and id or '-', name, course or '-', year or '-', email)
+			print >> fd, "%-*s %-*s %-8s %-30.30s %-6.6s %-4.4s %s" % (rbconfig.maxlen_uname, username or '-', rbconfig.maxlen_group, usertype or '-', id != None and id or '-', name, course or '-', year or '-', email)
 
 def sync():
 	"""Synchronise accounts (i.e. no changes are made to userdb) after an
@@ -790,7 +788,7 @@ def sync():
 			# a redbrick one then use it to place in their .forward file.
 			#
 			email = None
-			if usr.usertype in udb.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
+			if usr.usertype in rbconfig.usertypes_dcu and not re.search(r'@.*redbrick\.dcu\.ie', usr.email):
 				email = usr.email
 
 			print "Account created: %s %s password: %s" % (usr.usertype, usr.username, usr.passwd)
@@ -1005,7 +1003,7 @@ def checkdb():
 			if hdr:
 				print hdr
 				hdr = None
-			print "%-8s MISSING from userdb  (%-8s)" % (pw[0], group),
+			print "%-*s MISSING from userdb  (%-*s)" % (pw[0], rbconfig.maxlen_uname, group, rbconfig.maxlen_group),
 			if not os.access('%s/%s' % (rbconfig.signaway_state_dir, pw[0]), os.F_OK):
 				print '[never logged in]'
 			else:
@@ -1359,25 +1357,23 @@ def get_username(usr, check_user_exists = 1):
 	"""Get an existing username."""
 
 	if len(opt.args) > 0 and opt.args[0]:
-		usr.username = opt.username = opt.args.pop(0)
+		usr.uid = opt.username = opt.args.pop(0)
 		interact = 0
 	else:
 		interact = 1
 		
 	while 1:
 		if interact:
-			usr.username = ask('Enter username')
+			usr.uid = ask('Enter username')
 		try:
-			udb.check_username(usr.username)
+			udb.check_username(usr.uid)
 
 			if check_user_exists:
-				# If we're performing an account only operation, the
-				# user may not exist in the database and vice versa.
-				#
-				if not opt.aconly:
-					udb.check_user_byname(usr.username)
-				if not opt.dbonly:
-					acc.check_account_byname(usr.username)
+				tmpusr = RBUser(uid = usr.uid)
+				udb.get_user_byname(tmpusr)
+				udb.check_user_byname(usr.uid)
+				# XXX: disabling for Shrapnel FTTB
+				#acc.check_account_byname(tmpusr)
 		except RBError, e:
 			if not rberror(e, interact):
 				break
@@ -1390,23 +1386,17 @@ def get_freeusername(usr, check_reserved = 1):
 	"""Get a new (free) username."""
 
 	if len(opt.args) > 0 and opt.args[0]:
-		usr.username = opt.args.pop(0)
+		usr.uid = opt.args.pop(0)
 		interact = 0
 	else:
 		interact = 1
 	
 	while 1:
 		if interact:
-			usr.username = ask('Enter new username')
+			usr.uid = ask('Enter new username')
 		try:
-			# If we're performing an account only operation, the
-			# user may not exist in the database and vice versa.
-			#
-			if not opt.aconly:
-				udb.check_userfree(usr.username, check_reserved)
-			if not opt.dbonly:
-				acc.check_accountfree(usr.username)
-			udb.check_username(usr.username)
+			udb.check_username(usr.uid)
+			udb.check_userfree(usr.uid, check_reserved)
 		except RBError, e:	
 			if not rberror(e, interact):
 				break
@@ -1427,16 +1417,16 @@ def get_usertype(usr):
 	else:
 		interact = 1
 		print "Usertype must be specified. List of valid usertypes:\n"
-		for i in udb.usertypes_list:
-			if opt.mode != 'renew' or i in udb.usertypes_paying:
-				print " %-12s %s" % (i, udb.usertypes[i])
+		for i in rbconfig.usertypes_list:
+			if opt.mode != 'renew' or i in rbconfig.usertypes_paying:
+				print " %-12s %s" % (i, rbconfig.usertypes[i])
 		print
 
 	defans = usr.usertype or 'member'
 
 	while 1:	
 		if interact:
-			usr.usertype = ask('Enter usertype', defans, hints = [i for i in udb.usertypes_list if opt.mode != 'renew' or i in udb.usertypes_paying])
+			usr.usertype = ask('Enter usertype', defans, hints = [i for i in rbconfig.usertypes_list if opt.mode != 'renew' or i in rbconfig.usertypes_paying])
 		try:
 			if opt.mode == 'renew':
 				udb.check_renewal_usertype(usr.usertype)
@@ -1457,17 +1447,17 @@ def get_convert_usertype(usr):
 	else:
 		interact = 1
 		print "Conversion usertype must be specified. List of valid usertypes:\n"
-		for i in udb.usertypes_list:
-			print " %-12s %s" % (i, udb.usertypes[i])
+		for i in rbconfig.usertypes_list:
+			print " %-12s %s" % (i, rbconfig.usertypes[i])
 
 		print "\nSpecial committee positions (usertype is 'committe'):\n"
-		for i, j in udb.convert_usertypes.items():
+		for i, j in rbconfig.convert_usertypes.items():
 			print " %-12s %s" % (i, j)
 		print
 
 	while 1:	
 		if interact:
-			usr.usertype = ask('Enter conversion usertype', hints = list(udb.usertypes_list) + udb.convert_usertypes.keys())
+			usr.usertype = ask('Enter conversion usertype', hints = list(rbconfig.usertypes_list) + rbconfig.convert_usertypes.keys())
 		try:
 			udb.check_convert_usertype(usr.usertype)
 		except RBError, e:
@@ -1479,7 +1469,7 @@ def get_convert_usertype(usr):
 def get_id(usr):
 	"""Get DCU ID."""
 
-	if usr.usertype not in udb.usertypes_dcu and opt.mode != 'update':
+	if usr.usertype not in rbconfig.usertypes_dcu and opt.mode != 'update':
 		return
 		
 	if opt.id != None:
@@ -1549,7 +1539,9 @@ def get_createaccount(usr):
 	if opt.dbonly != None and opt.aconly != None:
 		return
 	
-	if usr.usertype != 'reserved' and not yesno('Create account', not usr.usertype in udb.usertypes_system):
+	# XXX
+	#if usr.usertype != 'reserved' and not yesno('Create account', not usr.usertype in rbconfig.usertypes_system):
+	if not yesno('Create account', 1):
 		opt.dbonly = 1
 		opt.aconly = 0
 
@@ -1559,18 +1551,20 @@ def get_setpasswd(usr):
 	if opt.setpasswd != None:
 		return
 
-	if opt.dbonly != None:
-		opt.setpasswd = not opt.dbonly
-		return
+	# XXX
+	#if opt.dbonly != None:
+	#	opt.setpasswd = not opt.dbonly
+	#	return
 
-	if usr.usertype != 'reserved':
-		if opt.mode == 'renew':
-			opt.setpasswd = 0
-		else:
-			opt.setpasswd = 1
-		opt.setpasswd = yesno('Set new random password', opt.setpasswd)
-	else:
+	# XXX
+	#if usr.usertype != 'reserved':
+	if opt.mode == 'renew':
 		opt.setpasswd = 0
+	else:
+		opt.setpasswd = 1
+	opt.setpasswd = yesno('Set new random password', opt.setpasswd)
+	#else:
+	#	opt.setpasswd = 0
 
 def get_newbie(usr):
 	"""Get newbie boolean."""
@@ -1584,7 +1578,7 @@ def get_newbie(usr):
 def get_years_paid(usr):
 	"""Get years paid."""
 
-	if not usr.usertype in udb.usertypes_paying and opt.mode != 'update':
+	if not usr.usertype in rbconfig.usertypes_paying and opt.mode != 'update':
 		return
 	
 	if opt.years_paid != None:
@@ -1652,7 +1646,7 @@ def get_email(usr, hints = None):
 		else:
 			break
 
-def get_updated_by(usr):
+def get_updatedby(usr):
 	"""Get username of who is performing the action.
 
 	Uses LOGNAME environment variable by default unless it's 'root' in
@@ -1662,25 +1656,20 @@ def get_updated_by(usr):
 
 	"""
 
-	if opt.updated_by:
-		usr.updated_by = opt.updated_by
+	if opt.updatedby:
+		usr.updatedby = opt.updatedby
 		interact = 0
 	else:
 		interact = 1
-		if os.environ.has_key('LOGNAME') and os.environ['LOGNAME']:
-			usr.updated_by = os.environ['LOGNAME']
-		elif os.environ.has_key('SU_FROM') and os.environ['SU_FROM']:
-			usr.updated_by = os.environ['SU_FROM']
-		else:
-			usr.updated_by = None
+		usr.updatedby = os.environ.get('LOGNAME') or os.environ.get('SU_FROM')
 
-	defans = usr.updated_by
+	defans = usr.updatedby
 
 	while 1:
 		if interact:
-			usr.updated_by = ask('Enter who updated this user (give Unix username)', defans)
+			usr.updatedby = ask('Enter who updated this user (give Unix username)', defans)
 		try:
-			udb.check_updated_by(usr.updated_by)
+			udb.check_updatedby(usr.updatedby)
 		except RBError, e:
 			if not rberror(e, interact):
 				break
@@ -1690,7 +1679,7 @@ def get_updated_by(usr):
 def get_birthday(usr):
 	"""Get (optional) birthday."""
 
-	if not usr.usertype in udb.usertypes_paying:
+	if not usr.usertype in rbconfig.usertypes_paying:
 		return
 	
 	if opt.birthday != None:
@@ -1736,13 +1725,7 @@ def get_disuser_message(usr):
 	"""Get message to display when disusered user tries to log in."""
 
 	file = "%s/%s" % (rbconfig.daft_dir, usr.username)
-	
-	if os.environ.has_key('EDITOR'):
-		editor = os.environ['EDITOR']
-	elif os.environ.has_key('VISUAL'):
-		editor = os.environ['VISUAL']
-	else:
-		editor = 'vi'
+	editor = os.environ.get('EDITOR', os.environ.get('VISUAL', 'vi'))
 	
 	while 1:
 		if not os.path.isfile(file):
@@ -1784,17 +1767,30 @@ def get_rrslog():
 #-----------------------------------------------------------------------------#
 
 def rberror(e, interactive = 0):
-	"""Handle (mostly) RBError exceptions."""
+	"""rberror(e[, interactive]) -> status
+
+	Handle (mostly) RBError exceptions.
+	
+	Interactive: If e is a RBWarningError, prompt to override this error.
+	If overridden, return false. Otherwise and for all other errors,
+	return true.
+
+	Not interactive: If e is a RBWarningError and the override option was
+	set on the command line, return false. Otherwise and for all other
+	errors, exit the program.
+
+	"""
 
 	res = None
 	if not isinstance(e, RBError):
 		print "FATAL:",
 	print e
 	
-	if interactive and (not isinstance(e, RBError) or isinstance(e, RBFatalError)):
-		print
-		return 1
-	elif isinstance(e, RBWarningError):
+	if not isinstance(e, RBWarningError):
+		if interactive:
+			print
+			return 1
+	else:
 		if interactive:
 			print
 			if yesno('Ignore this error?'):
@@ -1813,7 +1809,12 @@ def rberror(e, interactive = 0):
 	sys.exit(1)
 	
 def error(e, mesg = None):
-	"""Handle general exceptions."""
+	"""error(e[, mesg])
+	
+	Handle general exceptions: prints the 'FATAL:' prefix, optional
+	message followed by the exception message. Exits program.
+	
+	"""
 	
 	print "FATAL: ",
 	if mesg:

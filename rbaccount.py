@@ -54,8 +54,9 @@ class RBAccount:
 	def add(self, username, usertype, name, passwd = None, email = None):
 		"""Add a local Unix account."""
 		
-		if usertype == 'reserved':
-			return
+		# XXX
+		#if usertype == 'reserved':
+		#	return
 
 		sh_username = self.shquote(username)
 		sh_usertype = self.shquote(usertype)
@@ -131,44 +132,45 @@ class RBAccount:
 			except OSError:
 				pass
 
-	def rename(self, username, newusername):
-		"""Rename an account."""
+	def rename(self, usr, newusr):
+		"""Rename an account.
+		
+		Requires: usr.uid, usr.homeDirectory, newusr.uid,
+		newusr.homeDirectory
+		
+		"""
 
-		pw = self.get_account_byname(username)
-		usertype = self.get_group_byid(pw[3])[0]
-		newhome = self.homedir(newusername, usertype)
-		oldhome = pw[5]
+		# XXX Should check this before we rename user in ldap, have a
+		# rbaccount.check_userfree ?
 
-		if os.access(newhome, os.F_OK):
+		if os.path.exists(newusr.homeDirectory):
 			raise RBFatalError("New home directory '%s' already exists" % newhome)
 		
-		self.cmd("%s -d %s -l %s %s" % (rbconfig.usermod_command, self.shquote(newhome), self.shquote(newusername), self.shquote(username)))
-
 		try:
-			self.my_rename(oldhome, newhome)
-		except:
-			raise RBFatalError("Could not rename home directory")
+			self.wrapper(os.rename, usr.homeDirectory, newusr.homeDirectory)
+		except OSError, e:
+			raise RBFatalError("Could not rename home directory [%s]" % e)
 
-		renames = (
-			("%s/%s" % (rbconfig.signaway_state_dir, username), "%s/%s" % (rbconfig.signaway_state_dir, newusername)),
-			("/var/mail/%s" % username, "/var/mail/%s" % newusername),
-			("/var/spool/cron/crontabs/%s" % username, "/var/spool/cron/crontabs/%s" % newusername)
-		)
-			
-		for old, new in renames:
+		# Rename any extra files that may belong to a user.
+		#
+		for file in rbconfig.extra_user_files:
+			old = file % usr.uid
+			new = file % newusr.uid
+
 			try:
-				if os.access(old, os.F_OK):
-					self.my_rename(old, new)
-			except OSError:
-				raise RBFatalError("Rename of '%s' to '%s'" % (old, new))
+				if os.path.isfile(old):
+					self.wrapper(os.rename, old, new)
+			except OSError,e :
+				raise RBFatalError("Could not rename '%s' to '%s' [%s]" % (old, new, e))
 
+		# XXX
 		# Rename their subscription to announce lists in case an email
 		# alias isn't put in for them or is later removed.
 		#
-		self.list_delete('announce-redbrick', "%s@redbrick.dcu.ie" % username);
-		self.list_delete('redbrick-newsletter', "%s@redbrick.dcu.ie" % username);
-		self.list_add('announce-redbrick', "%s@redbrick.dcu.ie" % newusername);
-		self.list_add('redbrick-newsletter', "%s@redbrick.dcu.ie" % newusername);
+		self.list_delete('announce-redbrick', "%s@redbrick.dcu.ie" % usr.uid);
+		self.list_delete('redbrick-newsletter', "%s@redbrick.dcu.ie" % usr.uid);
+		self.list_add('announce-redbrick', "%s@redbrick.dcu.ie" % newusr.uid);
+		self.list_add('redbrick-newsletter', "%s@redbrick.dcu.ie" % newusr.uid);
 		
 	def convert(self, username, usertype):
 		"""Convert account to a new usertype (Unix group)."""
@@ -293,17 +295,15 @@ class RBAccount:
 	# SINGLE ACCOUNT INFORMATION METHODS                                  #
 	#---------------------------------------------------------------------#
 	
-	def show(self, username):
+	def show(self, usr):
 		"""Show account details on standard output."""
 
-		pw = self.get_account_byname(username)
-		group = self.get_groupname_byid(pw[3])
-
-		print "%12s: %d [%s]" % ('user id', pw[2], username)
-		print "%12s: %d [%s]" % ('group id', pw[2], group)
-		print "%12s: %s" % ('gecos', pw[4])
-		print "%12s: %s" % ('homedir', pw[5])
-		print "%12s: %s" % ('shell', pw[6])
+		print "%13s:" % 'homedir mode',
+		if os.path.isdir(usr.homeDirectory):
+			print '%04o' % (os.stat(usr.homeDirectory)[0] & 07777)
+		else:
+			print 'Home directory does not exist'
+		print "%13s: %s" % ('logged in', os.path.exists('%s/%s' % (rbconfig.signaway_state_dir, usr.uid)) and 'true' or 'false')
 
 	#---------------------------------------------------------------------#
 	# MISCELLANEOUS METHODS                                               #
@@ -318,20 +318,18 @@ class RBAccount:
 	# USER CHECKING AND INFORMATION RETRIEVAL METHODS                     #
 	#---------------------------------------------------------------------#
 	
-	def check_accountfree(self, username):
-		"""Raise RBFatalError if given account name is not free."""
+	def check_accountfree(self, usr):
+		"""Raise RBFatalError if given account name is not free i.e.
+		has a home directory."""
 
-		try:
-			pw = self.check_account_byname(username)
-		except RBError:
-			pass
-		else:
-			raise RBFatalError("Account '%s' is already taken by %s account (%s)" % (pw[0], self.get_groupname_byid(pw[3]), pw[5]))
+		if os.path.exists(usr.homeDirectory):
+			raise RBFatalError("Account '%s' already exists (has a home directory)" % usr.uid)
 
-	def check_account_byname(self, username):
+	def check_account_byname(self, usr):
 		"""Raise RBFatalError if given account does not exist."""
 
-		self.get_account_byname(username)
+		if not os.path.exists(usr.homeDirectory):
+			raise RBFatalError("Account '%s' does not exist (no home directory)" % usr.uid)
 
 	def check_group_byname(self, group):
 		"""Raise RBFatalError if group with given name does not
@@ -437,38 +435,6 @@ class RBAccount:
 
 		self.runcmd('%s/bin/remove_members %s %s' % (rbconfig.mailman_dir, self.shquote(list), self.shquote(email)))
 	
-	def setpasswd(self, username, passwd):
-		"""Set password for local Unix account."""
-		
-		if passwd:
-			fd = self.my_popen('%s %s' % (rbconfig.passwd_command, self.shquote(username)))
-			fd.write('%s\n%s\n' % (passwd, passwd))
-			self.my_close(fd)
-		else: 
-			# No password given. For new accounts this results in
-			# the account remaining disabled.
-			pass
-		
-	def homedir(self, username, usertype):
-		"""Construct a user's home directory path given username and usertype."""
-		
-		if usertype in ('member', 'associat'):
-			hash = username[0] + '/'
-		else:
-			hash = ''
-
-		return '/home/%s/%s%s' % (usertype, hash, username)
-
-	def mkpasswd(self):
-		"""Generate a random plaintext password."""
-
-		passchars = 'a b c d e f g h i j k m n p q r s t u v w x y z A B C D E F G H J K L M N P Q R S T U V W X Y Z 2 3 4 5 6 7 8 9'.split()
-		password = ''
-		for c in range(8):
-			password += passchars[random.randrange(len(passchars))]
-
-		return password
-
         #--------------------------------------------------------------------#
 	# INTERNAL METHODS                                                   #
 	#--------------------------------------------------------------------#
@@ -501,6 +467,30 @@ class RBAccount:
 		if status:
 			raise RBFatalError("Command '%s' failed.\n%s" % (cmd, output))
 	
+	def wrapper(self, function, *keywords, **arguments):
+		"""Wrapper method for executing other functions.
+		
+		If test mode is set, print function name and arguments.
+		Otherwise call function with arguments.
+		
+		"""
+
+		if self.opt.test:
+			sys.stderr.write("TEST: %s(" % function.__name__)
+			for i in keywords[:-1]:
+				sys.stderr.write("%s, " % (i,))
+			if keywords:
+				sys.stderr.write("%s" % (keywords[-1],))
+				if arguments:
+					sys.stderr.write(", ")
+			for k, v in arguments.items()[:-1]:
+				sys.stderr.write("%s = %s, " % (k, v))
+			if arguments:
+				sys.stderr.write("%s = %s" % arguments.items()[-1])
+			sys.stderr.write(")\n")
+		else:
+			function(*keywords, **arguments)
+		
 	def my_open(self, file):
 		"""Return file descriptor to given file for writing."""
 		
