@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision$'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -31,19 +31,19 @@ class RBOpt:
 		# Used by useradm.
 		self.args = []
 		self.help = None
-		self.username = None
+		self.uid = None
 		self.dbonly = None
 		self.aconly = None
 		self.updatedby = None
 		self.newbie = None
 		self.mailuser = None
 		self.usertype = None
-		self.name = None
-		self.email = None
+		self.cn = None
+		self.altmail = None
 		self.id = None
 		self.course = None
 		self.year = None
-		self.years_paid = None
+		self.yearsPaid = None
 		self.birthday = None
 		self.quiet = None
 		# Used by rrs.
