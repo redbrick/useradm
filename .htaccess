@@ -1,0 +1,4 @@
+AuthType Basic
+AuthName "RRS"
+AuthUserFile "/usr/pkg/share/httpd/rrs_htpasswd"
+Require valid-user
