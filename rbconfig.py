@@ -12,7 +12,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 # Maximum length of usernames and groups.
@@ -57,57 +57,55 @@ mailman_list_suffixes = ("-admin", "-bounces", "-confirm", "-join", "-leave", "-
 
 # Directory pathnames.
 
-home_dir = '/home'
-webtree_dir = '/webtree'
-signaway_state_dir = '/local/share/agreement/statedir'
-daft_dir = '/local/share/daft'
-skel_dir = '/etc/skel'
-mailman_dir = '/local/mailman'
+dir_home = '/home'
+dir_webtree = '/webtree'
+dir_signaway_state = '/local/share/agreement/statedir'
+dir_daft = '/local/share/daft'
+dir_skel = '/etc/skel'
+dir_mailman = '/local/mailman'
 
 # Filenames.
 
-shells_file = '/etc/shells'
-backup_passwd_file = '/var/backups/passwd.pre-expired'
-default_shell = '/usr/local/shells/zsh'
-expired_shell = '/usr/local/shells/expired'
+file_uidNumber = 'uidNumber.txt'
+file_pre_sync = 'presync.txt'
+file_rrslog = 'rrs.log'
+file_shells = '/etc/shells'
+file_backup_passwd = '/var/backups/passwd.pre-expired'
+shell_default = '/usr/local/shells/zsh'
+shell_expired = '/usr/local/shells/expired'
 
 # Unix group files: (group file, hostname) pairs.
 
-group_files = (
+files_group = (
 	('/etc/group', 'Prodigy'),
 	('/local/share/var/deathray/group', 'Deathray')
 )
 
 # host files: (host file, hostname) pairs.
 
-host_files = (
+files_host = (
 	('/etc/hosts', 'Prodigy'),
 	('/local/share/var/deathray/hosts', 'Deathray')
 )
 
 # Email alias files.
 
-alias_files = (
+files_alias = (
 	('/etc/mail/exim_aliases.txt', 'Mail alias'),
 )
 
-# Extra files that may belong to a user outside of their main storage areas.
-# '%s' will be replaced with username.
-
-extra_user_files = (
-	"%s/%%s" % signaway_state_dir,
-	"/var/mail/%s",
-	"/var/spool/cron/crontabs/%s"
-)
-			
 # Commands.
 
-setquota_command = '/usr/local/sbin/setquota'
+command_setquota = '/usr/local/sbin/setquota'
+command_chown = '/bin/chown'
+command_chgrp = '/bin/chgrp'
+command_cp = '/bin/cp'
+command_sendmail = '/usr/sbin/sendmail'
 
 # Valid account usertypes and descriptions.
 #
 usertypes = {
-	'founder':	'RedBrick founder',
+	'founders':	'RedBrick founder',
 	'member':	'Normal member',
 	'associat':	'Graduate/associate member',
 	'staff':	'DCU staff member',
@@ -201,14 +199,14 @@ def gen_homedir(username, usertype):
 	else:
 		hash = ''
 
-	return '%s/%s/%s%s' % (home_dir, usertype, hash, username)
+	return '%s/%s/%s%s' % (dir_home, usertype, hash, username)
 
-def gen_webtree(self, username):
+def gen_webtree(username):
 	"""Generate a user's webtree path for given username."""
 
-	return '%s/%s/%s' % (webtree_dir, username[0], username)
+	return '%s/%s/%s' % (dir_webtree, username[0], username)
 
-def quotas(usertype = None):
+def gen_quotas(usertype = None):
 	"""Returns a dictionary of quota limits for filesystems (possibly
 	depending on the given usertype, if any).
 
@@ -222,14 +220,18 @@ def quotas(usertype = None):
 	
 	"""
 
-	quotas = {}
-	default_home_quota = (75000, 80000, 10000, 10500)
+	return {
+		'/webtree': (125000, 135000, 20000, 30000)
+	}
 
-	# Clubs & Socs get a 100MB quota.
-	#
-	if usertype in ('club', 'society'):
-		quotas['/home'] = (100000, 105000) + default_home_quota[2:]
-	else:
-		quotas['/home'] = default_home_quota
+def gen_extra_user_files(username):
+	"""Return list of files that may belong to the given user outside of
+	their main storage areas. For purposes of renaming or deleting."""
 
-	return quotas
+	# XXX: need files for carbon now aswell.
+
+	return  (
+		'%s/%s' % (dir_signaway_state, username),
+		'/var/mail/%s' % username,
+		'/var/spool/cron/crontabs/%s' % username
+	)
