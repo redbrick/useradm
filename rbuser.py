@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision$'
+__version__ = '$Revision: 1.2 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -51,7 +51,8 @@ class RBUser:
 		'loginShell',
 		'homeDirectory',
 		'userPassword',		# Crypted password.
-		'host'			# List of hosts.
+		'host',			# List of hosts.
+		'shadowLastChange'	# Last time password was changed.
 	)
 
 	# List of additional user attributes that are NOT in LDAP.
