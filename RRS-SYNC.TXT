@@ -1,0 +1,103 @@
+# 
+# Steps required to use a standalone RRS setup and then sync in changes
+# afterwards.
+#
+# $Id$
+#
+
+# Make master ldap r/o (add "readonly on" to slapd.conf)
+# Stop slurpd.
+
+# Take backup of current tree, now that ldap is r/o.
+#
+slapcat -l slapcat.pre-sync
+
+# Take pre_sync backup copy for running sync with the new tree later on.
+#
+useradm pre_sync
+
+# Copy RRS directory and master slapd setup to the standalone RRS
+# computer. Make sure user web server runs as can read and execute the CGIs,
+# write to rrs.log and the tracebacks directory (and nothing else). Setup a
+# .htaccess file to require a password. Enforce SSL only if possible.
+
+# Truncate rrs.log.
+#
+:> rrs.log
+
+# Make sure uidNumber.txt is correct (should be, if copied across!).
+#
+useradm create_uidNumber
+
+# After using rrs, shutdown slapd and do a slapcat:
+#
+pkill slapd
+slapcat -l slapcat.rrs
+
+# Copy rrs.log and slapcat.rrs back to useradm machine.
+
+# Turn off MTA until ldap is back and all accounts are in sync again.
+#
+/etc/init.d/exim stop
+
+# Any machines which point nss & pam at the master need to be pointed at a
+# backup ldap server on another machine as the ldap rebuild will take a few
+# minutes, might as well be nice to our users :-)
+
+# Turn off master sldapd & slurpd.
+#
+/etc/init.d/slapd stop
+
+# Move ldap dbs out to clear db, but keep a backup just in case.
+#
+mv /var/db/ldap/redbrick /var/db/ldap/redbrick.pre-sync
+mkdir /var/db/ldap/redbrick
+
+# Now add the new tree.
+#
+slapadd -v -l slapcat.rrs
+
+# Make master ldap r/w again, but restrict write access to root only.
+# Start master slapd up again. Don't start slurpd.
+#
+/etc/init.d/slapd start
+
+# Remove files which indicate if a renewal has been mailed. These might still
+# be here from a previous run.
+#
+rm -rf renewal_mailed/
+
+# Do sync stuff. Run *1* step at a time. First with -T to make sure it will do
+# the right thing then run the step for real. This will involve hitting ^C
+# after completing each step so that test mode can be run on the next step i.e:
+#
+useradm sync -T
+# ^C at prompt for next step
+useradm sync
+# ^C at prompt for next step, rinse, wash, repeat.
+
+# Stop master slapd.
+#
+/etc/init.d/slapd stop
+
+# Take post-sync backup now that it's shutdown.
+#
+slapcat -v -l slapcat.post-sync
+
+# Move ldap dbs out to clear db, but keep a backup just in case.
+#
+mv /var/db/ldap/redbrick /var/db/ldap/redbrick.post-sync
+mkdir /var/db/ldap/redbrick
+
+# Re-add post-sync backup so that it's all nicely indexed.
+#
+slapcat -v -l slapcat.post-sync
+
+# Go back to full r/w slapd again, so re-enable user write access.
+# Point nss & pam back to master server on machines that were changed.
+# Restart nscd on all machines.
+# Start MTA.
+
+# Load slapcat.post-sync on ldap backup servers using similar procedure
+# (redirect nss & pam, shutdown slapd, move dbs out, slapadd, start slapd,
+# point nss & pam back again)
