@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.6 $'
+__version__ = '$Revision: 1.7 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -42,7 +42,7 @@ ldap_reserved_tree = 'ou=reserved,o=redbrick'
 
 # DCU LDAP settings.
 
-ldap_dcu_uri = 'ldap://nds.dcu.ie'
+ldap_dcu_uri = 'ldap://atlas.dcu.ie'
 ldap_dcu_tree = 'o=dcu'
 ldap_dcu_students_tree = 'ou=students,o=dcu'
 ldap_dcu_staff_tree = 'ou=staff,o=dcu'
