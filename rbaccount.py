@@ -25,7 +25,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.2 $'
+__version__ = '$Revision: 1.3 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -94,10 +94,17 @@ class RBAccount:
 		for fs in rbconfig.gen_quotas().keys():
 			self.quota_delete(usr.uidNumber, fs)
 		
-		# Remove home directory and webtree.
+		# Remove home directory and webtree. Don't bomb out if the
+		# directories don't exist (i.e. ignore OSError).
 		#
-		self.wrapper(shutil.rmtree, usr.homeDirectory)
-		self.wrapper(shutil.rmtree, rbconfig.gen_webtree(usr.uid))
+		try:
+			self.wrapper(shutil.rmtree, usr.homeDirectory)
+		except OSError:
+			pass
+		try:
+			self.wrapper(shutil.rmtree, rbconfig.gen_webtree(usr.uid))
+		except OSError:
+			pass
 
 		# Remove from announce mailing lists.
 		#
