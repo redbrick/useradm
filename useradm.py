@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.5 $'
+__version__ = '$Revision: 1.6 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -367,15 +367,12 @@ def delete():
 def renew():
 	"""Renew user."""
 
-	raise RBFatalError("NOT IMPLEMENTED YET")
-
 	usr = RBUser()
 	curusr = RBUser()
 	get_username(usr)
-	newusr = RBUser(username = usr.uid)
 
 	try:
-		udb.get_userinfo_renew(newusr, curusr)
+		udb.get_userinfo_renew(usr, curusr, override=1)
 	except RBError, e:
 		if rberror(e, opt.uid == None):
 			return
@@ -386,34 +383,47 @@ def renew():
 		if rberror(e, opt.uid == None):
 			return
 
-	usr.usertype = newusr.usertype
-	usr.id = newusr.id
 	udb.get_userdefaults_renew(usr)
 	
+	udb.show_diff(usr, curusr)
+	print
+	if curusr.usertype != usr.usertype:
+		print 'NOTICE: A new usertype was determined by DCU database!'
+		print
+	edit_details = yesno(
+		'New details of user to be renewed are shown above with any differences\n' \
+		'from current values. Edit user details?', 0)
+
+	if edit_details:
+		while 1:
+			get_id(usr)
+	
+			try:
+				# If id was changed, need to get updated user info.
+				#
+				udb.get_userinfo_renew(usr, override = 1)
+				# XXX: check id not already in use
+			except RBError, e:
+				if not rberror(e, opt.id == None):
+					break
+			else:
+				break
+
+		if curusr.id != usr.id:
+			udb.show_diff(usr, curusr)
+			print
+
+		get_usertype(usr)
+		get_newbie(usr)
+		get_name(usr, (curusr.cn,))
+		get_email(usr, (curusr.altmail,))
+		get_course(usr, (curusr.course,))
+		get_year(usr, (curusr.year,))
+		get_years_paid(usr)
+		get_birthday(usr)
+
 	get_setpasswd(usr)
 	get_mailuser(usr)
-	get_usertype(usr)
-
-	while 1:
-		get_id(usr)
-	
-		try:
-			# If id was changed, need to get updated user info.
-			#
-			udb.get_userinfo_renew(usr)
-		except RBError, e:
-			if not rberror(e, opt.id == None):
-				break
-		else:
-			break
-
-	get_newbie(usr)
-	get_name(usr, (curusr.cn,))
-	get_email(usr, (curusr.altmail,))
-	get_course(usr, (curusr.course,))
-	get_year(usr, (curusr.year,))
-	get_years_paid(usr)
-	get_birthday(usr)
 	get_updatedby(usr)
 	
 	# End of user interaction, set options for override & test mode.
@@ -425,18 +435,20 @@ def renew():
 		udb.renew(usr)
 	
 	if opt.setpasswd:
-		usr.passwd = acc.mkpasswd()
-		print "Account password set for %s password: %s" % (usr.uid, usr.passwd)
-		acc.setpasswd(usr.uid, usr.passwd)
+		usr.passwd = rbconfig.gen_passwd()
+		print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
+		udb.set_passwd(usr)
 	
-	if not opt.dbonly:
-		if usr.oldusertype != usr.usertype:
+	if curusr.usertype != usr.usertype:
+		if not opt.aconly:
+			print 'User converted: %s -> %s' % (usr.uid, usr.usertype)
+			udb.convert(curusr, usr)
+		if not opt.dbonly:
 			print 'Account converted: %s -> %s' % (usr.uid, usr.usertype)
-			acc.convert(usr.uid, usr.usertype)
+			acc.convert(curusr, usr)
 	
-		if not acc.valid_shell(acc.get_shell(usr.uid)):
-			print 'Account shell reset for', usr.uid
-			acc.reset_shell(usr.uid)
+	if udb.reset_shell(usr):
+		print 'Account shell reset for', usr.uid, '(%s)' % usr.loginShell
 	
 	if opt.mailuser:
 		print "User mailed:", usr.altmail

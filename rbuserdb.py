@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -230,7 +230,7 @@ class RBUserDB:
 			#
 			dcuusr = RBUser(uid = usr.uid, usertype = usr.usertype, id = usr.id)
 			try:
-				self.get_dcu_byid(dcuusr, override = override)
+				self.get_dcu_byid(dcuusr, override = 1)
 			except RBError, e:
 				self.rberror(e)
 			
@@ -248,11 +248,9 @@ class RBUserDB:
 			#   the usertype as appropriate when override option is given,
 			#   so we automatically override this here too.
 			#
-			if dcuusr.usertype:
-				usr.usertype = dcuusr.usertype
 			if usr.usertype == 'associat':
 				dcuusr.altmail = None
-			usr.merge(dcuusr)
+			usr.merge(dcuusr, override = override)
 
 		usr.merge(RBUser(curusr, updatedby = None))
 
@@ -480,9 +478,6 @@ class RBUserDB:
 		if len(uid) > rbconfig.maxlen_uname:
 			raise RBFatalError("Username can not be longer than %d characters" % rbconfig.maxlen_uname)
 		
-		if not re.search(r'[a-z]', uid):
-			raise RBFatalError("Username must contain at least one letter")
-		
 		if re.search(r'^[^a-z0-9]', uid):
 			raise RBFatalError("Username must begin with letter or number")
 
@@ -708,8 +703,9 @@ class RBUserDB:
 	def reset_shell(self, usr):
 		"""Reset shell for given user."""
 
-		self.get_user_byname(usr)
-		if self.valid_shell(usr.loginShell):
+		tmpusr = RBUser(uid = usr.uid)
+		self.get_user_byname(tmpusr)
+		if self.valid_shell(tmpusr.loginShell):
 			return 0
 
 		usr.loginShell = self.get_backup_shell(usr.uid)
@@ -726,6 +722,22 @@ class RBUserDB:
 		for i in usr.attr_list_all:
 			if getattr(usr, i) != None:
 				print "%13s: %s" % (i, getattr(usr, i))
+
+	def show_diff(self, usr, oldusr):
+		"""
+		Show RBUser object information on standard output.
+		
+		Show any attributes in usr which differ in value from those in
+		oldusr.
+		"""
+
+		for i in 'uid', 'usertype', 'newbie', 'cn', 'altmail', 'id', 'course', 'year', 'yearsPaid':
+			v = getattr(usr, i)
+			if v != None:
+				ov = getattr(oldusr, i, None)
+				print "%15s: %s" % (ov != v and "(NEW) " + i or i, v)
+				if ov != v:
+					print "%15s: %s" % ("(OLD) " + i, getattr(oldusr, i))
 	
 	#---------------------------------------------------------------------#
 	# BATCH INFORMATION METHODS                                           #
@@ -1250,16 +1262,19 @@ class RBUserDB:
 
 		"""
 		
-		for i in res[1]['objectClass']:
-			if rbconfig.usertypes.has_key(i):
-				usr.usertype = i
-				break
-		else:
-			raise RBFatalError("Unknown usertype for user '%s'" % usr.uid)
+		if not usr.usertype:
+			for i in res[1]['objectClass']:
+				if rbconfig.usertypes.has_key(i):
+					usr.usertype = i
+					break
+			else:
+				raise RBFatalError("Unknown usertype for user '%s'" % usr.uid)
 
 		for k, v in res[1].items():
 			if getattr(usr, k) == None:
-				if k not in RBUser.attr_list_value:
+				if k == 'newbie':
+					usr.newbie = v[0] == 'TRUE'
+				elif k not in RBUser.attr_list_value:
 					setattr(usr, k, v[0])
 				else:
 					setattr(usr, k, v)
@@ -1267,7 +1282,6 @@ class RBUserDB:
 		# LDAP returns everything as strings, so booleans and integers
 		# need to be converted:
 		#
-		usr.newbie = res[1]['newbie'][0] == 'TRUE'
 		if usr.id:
 			usr.id = int(usr.id)
 		if usr.yearsPaid:
