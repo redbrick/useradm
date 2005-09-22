@@ -25,7 +25,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -264,12 +264,14 @@ class RBAccount:
 		Format for quota values is the same as that used for quotas
 		function in rbconfig module."""
 
-		self.cmd("%s -b %d -B %d -i %d -I %d %s %s" % (rbconfig.command_setquota, bqs, bqh, iqs, iqh, fs, self.shquote(str(username))))
+		self.cmd("%s %s %d %d %d %d %s" % (rbconfig.command_setquota, self.shquote(str(username)), bqs, bqh, iqs, iqh, fs))
+		#self.cmd("%s -b %d -B %d -i %d -I %d %s %s" % (rbconfig.command_setquota, bqs, bqh, iqs, iqh, fs, self.shquote(str(username))))
 
 	def quota_delete(self, username, fs):
 		"""Delete quota for given username on given filesystem."""
-
-		self.cmd('%s -d %s %s' % (rbconfig.command_setquota, fs, self.shquote(str(username))))
+		
+		self.quota_set(username, fs, 0, 0, 0, 0)
+		#self.cmd('%s -d %s %s' % (rbconfig.command_setquota, fs, self.shquote(str(username))))
 
 	#---------------------------------------------------------------------#
 	# SINGLE ACCOUNT INFORMATION METHODS                                  #
