@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.6 $'
+__version__ = '$Revision: 1.7 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -50,9 +50,10 @@ cmds = {
 	'pre_sync':		('Dump LDAP tree for use by sync before new tree is loaded', ''),
 	'sync':			('Synchronise accounts with userdb (for RRS)', '[rrs-logfile [presync-file]]'),
 	'sync_dcu_info':	('Interactive update of userdb using dcu database info', ''),
+	'list_users':		('List all usernames', ''),
+	'list_unavailable':	('List all usernames that are unavailable', ''),
 	'list_newbies':		('List all paid newbies', ''),
 	'list_renewals':	('List all paid renewals (non-newbie)', ''),
-	'freename_list':	('List all usernames that are taken', ''),
 	'list_unpaid':		('List all non-renewed users', ''),
 	'list_unpaid_normal':	('List all normal non-renewed users', ''),
 	'list_unpaid_reset':	('List all normal non-renewed users with reset shells', ''),
@@ -73,7 +74,7 @@ cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser', 'setshell')
 cmds_single_user_info = ('show', 'freename')
 cmds_interactive_batch = ('search', 'sync', 'sync_dcu_info')
 cmds_batch = ('newyear', 'unpaid_warn', 'unpaid_disable', 'unpaid_delete')
-cmds_batch_info = ('pre_sync', 'list_newbies', 'list_renewals', 'freename_list', 'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
+cmds_batch_info = ('pre_sync', 'list_users', 'list_unavailable', 'list_newbies', 'list_renewals', 'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
 cmds_misc = ('checkdb', 'stats', 'create_uidNumber')
 
 # Command group descriptions
@@ -1032,6 +1033,12 @@ def sync_dcu_info():
 # BATCH INFORMATION COMMANDS                                                  #
 #-----------------------------------------------------------------------------#
 
+def list_users():
+	"""List all usernames."""
+
+	for username in udb.list_users():
+		print username
+
 def list_newbies():
 	"""List all paid newbies."""
 
@@ -1044,10 +1051,10 @@ def list_renewals():
 	for username in udb.list_paid_non_newbies():
 		print username
 
-def list_freename():
+def list_unavailable():
 	"""List all usernames that are taken."""
 
-	for username in udb.freename_list():
+	for username in udb.list_reserved_all():
 		print username
 
 def list_unpaid():
