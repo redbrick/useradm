@@ -22,7 +22,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.4 $'
+__version__ = '$Revision: 1.5 $'
 __author__  = 'Cillian Sharkey'
 
 cmds = {
@@ -99,7 +99,7 @@ fields_yesno = {
 # HTML for custom form input fields.
 #
 fields_input = {
-	'cardid':	'class=fixed size=17 maxlength=15',
+	'cardid':	'class=fixed size=18 maxlength=16',
 	'cn':		'size=30',
 	'altmail':	'size=30',
 	'course':	'size=10 maxlength=50',
@@ -737,7 +737,9 @@ def get_cardid(usr):
 	The ID will either be the 8 digit number when entered manually or the
 	13 digit code produced by barcode and magnetic readers of the form
 	xxIDNUMBERnnn with possible start and/or end sentinel characters such
-	as ';' or '?'.
+	as ';' or '?'. Some readers will output a code number at the start,
+	(to indicate the type of barcode or something) so we assume the 13 digit
+	number is at the end (i.e. right-hand side) of the string.
 
 	If invalid input is given, raises RBFatalError.
 
@@ -748,7 +750,7 @@ def get_cardid(usr):
 
 	usr.id = form.getfirst('cardid')
 	if usr.id != None:
-		res = re.search(r'\D*\d{2}(\d{8})\d{3}\D*', usr.id)
+		res = re.search(r'\d{2}(\d{8})\d{3}\D*$', usr.id)
 		if res:
 			usr.id = int(res.group(1))
 			return
