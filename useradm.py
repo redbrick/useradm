@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.7 $'
+__version__ = '$Revision: 1.8 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -125,6 +125,7 @@ input_instructions = '\033[1mRETURN\033[0m: use [default] given  \033[1mTAB\033[
 #
 opt = RBOpt()
 udb = acc = None	 # Initialised later in main()
+header_mesg = None
 
 #-----------------------------------------------------------------------------#
 # MAIN                                                                        #
@@ -1143,51 +1144,68 @@ def unpaid_delete():
 def checkdb():
 	"""Check database for inconsistencies."""
 
-	raise RBFatalError("NOT IMPLEMENTED YET")
+	uidNumbers = {}
+	re_mail = re.compile(r'.+@.*dcu\.ie', re.I)
+	set_header('User database problems')
 
-	# First make sure all Unix accounts are in the userdb. Also check
-	# their group/usertype match (ignore differences for the system
-	# usertype).
-	#
-	hdr = header('User database problems')
-	pwusers = {}
-	for pw in pwd.getpwall():
-		pwusers[pw[0]] = 1
-		group = acc.get_groupname_byid(pw[3])
-		try:
-			usertype = udb.get_usertype_byname(pw[0])
-		except RBError:
-			if hdr:
-				print hdr
-				hdr = None
-			print "%-*s MISSING from userdb  (%-*s)" % (pw[0], rbconfig.maxlen_uname, group, rbconfig.maxlen_group),
-			if not os.access('%s/%s' % (rbconfig.dir_signaway_state, pw[0]), os.F_OK):
-				print '[never logged in]'
-			else:
-				print
-		else:
-			if group != usertype and usertype != 'system':
-				if hdr:
-					print hdr
-					hdr = None
-				print "%-8s GROUP/TYPE MISMATCH  (%-8s) (%-8s)" % (pw[0], group, usertype)
-
-	# Check for entries in the userdb that are missing an account (ignoring
-	# reserved entries). Also check email address.
-	#
-	for username in udb.user_list():
-		usr = RBUser(username = username)
+	for uid in udb.list_users():
+		usr = RBUser(uid=uid)
 		udb.get_user_byname(usr)
-		if usr.usertype != 'reserved' and not pwusers.has_key(username):
-			if hdr:
-				print hdr
-				hdr = None
-			print "%-8s MISSING unix account (%-8s)" % (username, usr.usertype)
-		if usr.usertype in ('member', 'staff', 'committe') and not re.search(r'.+@.*dcu\.ie', usr.altmail, re.I):
-			if hdr:
-				print hdr
-				hdr = None
-			print "%-8s does not have dcu email address: %s" % (username, usr.altmail)
+
+		if not uidNumbers.has_key(usr.uidNumber):
+			uidNumbers[usr.uidNumber] = [uid]
+		else:
+			uidNumbers[usr.uidNumber].append(uid)
+
+		if usr.yearsPaid != None and not -1 <= usr.yearsPaid <= 5:
+			show_header()
+			print '%-*s  has bogus yearsPaid: %s' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
+
+		for dir, desc in (usr.homeDirectory, 'home'), (rbconfig.gen_webtree(uid), 'webtree'):
+			if not os.path.exists(dir) or not os.path.isdir(dir):
+				show_header()
+				print '%-*s  is missing %s directory: %s' % (rbconfig.maxlen_uname, uid, desc, dir)
+			else:
+				stat = os.stat(dir)
+				if (stat.st_uid, stat.st_gid) != (usr.uidNumber, usr.gidNumber):
+					show_header()
+					print '%-*s  has wrong %s ownership' % (rbconfig.maxlen_uname, uid, desc)
+				if stat.st_mode & 0020:
+					show_header()
+					print '%-*s  has group writeable %s' % (rbconfig.maxlen_uname, uid, desc)
+				if stat.st_mode & 0002:
+					show_header()
+					print '%-*s  has WORLD writeable %s' % (rbconfig.maxlen_uname, uid, desc)
+
+		try:
+			grp = udb.get_group_byid(usr.gidNumber)
+		except RBFatalError:
+			grp = '#%d' % usr.gidNumber
+			show_header()
+			print '%-*s  has unknown gidNumber: %d' % (rbconfig.maxlen_uname, uid, usr.gidNumber)
+
+		if usr.usertype in ('member', 'staff', 'committe') and \
+		   (usr.altmail.lower().find('%s@redbrick.dcu.ie' % usr.uid) != -1 or \
+		    not re.search(re_mail, usr.altmail)):
+			show_header()
+			print "%-*s  is a %s without a DCU altmail address: %s" % (rbconfig.maxlen_uname, uid, usr.usertype, usr.altmail)
+
+		if usr.usertype != 'redbrick':
+			if grp != usr.usertype:
+				show_header()
+				print '%-*s  has different group [%s] and usertype [%s]' % (rbconfig.maxlen_uname, uid, grp, usr.usertype)
+		
+			if usr.homeDirectory != rbconfig.gen_homedir(uid, usr.usertype):
+				show_header()
+				print '%-*s  has wrong home directory [%s] for usertype [%s]' % (rbconfig.maxlen_uname, uid, usr.homeDirectory, usr.usertype)
+	
+	set_header('Duplicate uidNumbers')
+
+	for uidNumber, uids in uidNumbers.items():
+		if len(uids) > 1:
+			show_header()
+			print '%d  is shared by: %s' % (uidNumber, ', '.join(uids))
+
 
 def stats():
 	"""Show database and account statistics."""
@@ -1344,6 +1362,21 @@ def header(mesg):
 	"""Return a simple header string for given message."""
 
 	return '\n' + mesg + '\n' + '=' * len(mesg)
+
+def set_header(mesg):
+	"""Set the heading for the next section."""
+
+	global header_mesg
+	header_mesg = header(mesg)
+
+def show_header():
+	"""Display the heading for the current section as
+	set by set_header(). Will only print header once."""
+
+	global header_mesg
+	if header_mesg:
+		print header_mesg
+		header_mesg = None
 
 #-----------------------------------------------------------------------------#
 # USER MAILING FUNCTIONS                                                      #
