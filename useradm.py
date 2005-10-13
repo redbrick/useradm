@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.8 $'
+__version__ = '$Revision: 1.9 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1190,6 +1190,18 @@ def checkdb():
 			show_header()
 			print "%-*s  is a %s without a DCU altmail address: %s" % (rbconfig.maxlen_uname, uid, usr.usertype, usr.altmail)
 
+		if usr.yearsPaid < 1 and udb.valid_shell(usr.loginShell):
+			show_header()
+			print '%-*s  is unpaid but has a valid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
+
+		if usr.yearsPaid > 0 and not udb.valid_shell(usr.loginShell):
+			show_header()
+			print '%-*s  is paid but has an invalid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
+		
+		if not usr.userPassword[7].isalnum() and not usr.userPassword[7] in '/.':
+			show_header()
+			print '%-*s  has a disabled password: %s' % (rbconfig.maxlen_uname, uid, usr.userPassword)
+			
 		if usr.usertype != 'redbrick':
 			if grp != usr.usertype:
 				show_header()
