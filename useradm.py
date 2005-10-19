@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.9 $'
+__version__ = '$Revision: 1.10 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1160,6 +1160,14 @@ def checkdb():
 		if usr.yearsPaid != None and not -1 <= usr.yearsPaid <= 5:
 			show_header()
 			print '%-*s  has bogus yearsPaid: %s' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
+
+		if usr.yearsPaid == None and usr.usertype in ('member', 'associat', 'staff'):
+			show_header()
+			print '%-*s  is missing a yearsPaid attribute' % (rbconfig.maxlen_uname, uid)
+
+		if usr.id == None and usr.usertype in ('member', 'associat', 'staff'):
+			show_header()
+			print '%-*s  is missing a DCU ID number' % (rbconfig.maxlen_uname, uid)
 
 		for dir, desc in (usr.homeDirectory, 'home'), (rbconfig.gen_webtree(uid), 'webtree'):
 			if not os.path.exists(dir) or not os.path.isdir(dir):
