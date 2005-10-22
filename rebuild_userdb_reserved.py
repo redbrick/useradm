@@ -25,7 +25,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = "$Revision: 1.3 $"
+__version__ = "$Revision: 1.4 $"
 __author__ = "Cillian Sharkey"
 
 # Dictionary of (name, description) pairs to add.
@@ -130,7 +130,7 @@ def main():
 		fd = open(file)
 		for line in fd.readlines():
 			grp = line.split(':')[0].lower()
-			if not ldap_groups.has_key(grp):
+			if len(grp) <= rbconfig.maxlen_uname and not ldap_groups.has_key(grp):
 				add_entry(grp, '%s Unix group' % host)
 
 	print '[%d].' % len(entries.keys()),
