@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.8 $'
+__version__ = '$Revision: 1.9 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -82,14 +82,14 @@ shell_expired = '/usr/local/shells/expired'
 # Unix group files: (group file, hostname) pairs.
 
 files_group = (
-	('/etc/group', 'Prodigy'),
+	('/etc/group', 'Deathray'),
 	('/local/share/var/carbon/group', 'Carbon')
 )
 
 # host files: (host file, hostname) pairs.
 
 files_host = (
-	('/etc/hosts', 'Prodigy'),
+	('/etc/hosts', 'Deathray'),
 	('/local/share/var/carbon/hosts', 'Carbon')
 )
 
