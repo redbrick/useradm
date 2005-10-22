@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.12 $'
+__version__ = '$Revision: 1.13 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1147,7 +1147,7 @@ def checkdb():
 	uidNumbers = {}
 	re_mail = re.compile(r'.+@.*dcu\.ie', re.I)
 	set_header('User database problems')
-
+	unpaid_valid_shells = 0
 	reserved = udb.dict_reserved_desc()
 
 	for uid in udb.list_users():
@@ -1172,6 +1172,13 @@ def checkdb():
 			if usr.newbie and usr.yearsPaid < 1:
 				show_header()
 				print '%-*s  is a newbie but is unpaid (yearsPaid = %s)' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
+
+			if usr.yearsPaid < 1 and udb.valid_shell(usr.loginShell):
+				unpaid_valid_shells += 1
+
+			if usr.yearsPaid > 0 and not udb.valid_shell(usr.loginShell):
+				show_header()
+				print '%-*s  is paid but has an invalid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
 
 		if usr.yearsPaid == None and usr.usertype in ('member', 'associat', 'staff'):
 			show_header()
@@ -1210,14 +1217,6 @@ def checkdb():
 			show_header()
 			print "%-*s  is a %s without a DCU altmail address: %s" % (rbconfig.maxlen_uname, uid, usr.usertype, usr.altmail)
 
-		if usr.yearsPaid < 1 and udb.valid_shell(usr.loginShell):
-			show_header()
-			print '%-*s  is unpaid but has a valid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
-
-		if usr.yearsPaid > 0 and not udb.valid_shell(usr.loginShell):
-			show_header()
-			print '%-*s  is paid but has an invalid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
-		
 		if not usr.userPassword[7].isalnum() and not usr.userPassword[7] in '/.':
 			show_header()
 			print '%-*s  has a disabled password: %s' % (rbconfig.maxlen_uname, uid, usr.userPassword)
@@ -1230,6 +1229,12 @@ def checkdb():
 			if usr.homeDirectory != rbconfig.gen_homedir(uid, usr.usertype):
 				show_header()
 				print '%-*s  has wrong home directory [%s] for usertype [%s]' % (rbconfig.maxlen_uname, uid, usr.homeDirectory, usr.usertype)
+
+	if unpaid_valid_shells > 0:
+		show_header()
+		print
+		print "There are %d shifty gits on redbrick. Unpaid users with valid" % unpaid_valid_shells
+		print "login shells, that is. Go get 'em."
 	
 	set_header('Duplicate uidNumbers')
 
