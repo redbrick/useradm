@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.5 $'
+__version__ = '$Revision: 1.6 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -866,10 +866,10 @@ class RBUserDB:
 		return tmp
 
 	def dict_reserved_static(self):
-		"""Return dictionary of all reserved entries with their
+		"""Return dictionary of all static reserved entries with their
 		description."""
 
-		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, 'objectClass=reserved', ('uid', 'description'))
+		res = self.ldap.search_s(rbconfig.ldap_reserved_tree, ldap.SCOPE_ONELEVEL, '(&(objectClass=reserved)(flag=static))', ('uid', 'description'))
 		tmp = {}
 		for dn, data in res:
 			tmp[data['uid'][0]] = data['description'][0]
