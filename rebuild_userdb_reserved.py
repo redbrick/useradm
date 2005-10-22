@@ -25,7 +25,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = "$Revision: 1.2 $"
+__version__ = "$Revision: 1.3 $"
 __author__ = "Cillian Sharkey"
 
 # Dictionary of (name, description) pairs to add.
@@ -94,10 +94,10 @@ def main():
 	
 	# DNS entries.
 	#
-	re_dns = re.compile(r'^([\w\d_.*-]+?\.)?([\w\d_-]{1,%d})\.?\s+([\w\d]*\s+)?IN' % rbconfig.maxlen_uname)
 	dns_entries = {}
 	for zone in rbconfig.dns_zones:
-		fd = os.popen('dig @ns.redbrick.dcu.ie %s -t axfr' % zone)
+		fd = os.popen('dig @136.206.15.53 %s -t axfr' % zone)
+		re_dns = re.compile(r'^([^#;]*\.)?([^#;]{1,%d})\.%s.\s+\d+\s+IN' % (rbconfig.maxlen_uname, zone))
 		for line in fd.readlines():
 			res = re_dns.search(line)
 			if res:
@@ -110,7 +110,7 @@ def main():
 
 	# Do host files.
 	#
-	re_host = re.compile(r'^[^#\s]+\s+([^#]+)')# % rbconfig.maxlen_uname)
+	re_host = re.compile(r'^[^#\s]+\s+([^#]+)')
 	re_hostent = re.compile(r'\s+')
 	
 	for file, host in rbconfig.files_host:
@@ -119,8 +119,8 @@ def main():
 			res = re_host.search(line.lower())
 			if not res:
 				continue
-			for name in re_hostent.split(res.group(1)):
-				if name and name.find('.') == -1 and len(name) <= rbconfig.maxlen_uname and not dns_entries.has_key(name):
+			for name in res.group(1).split():
+				if name and '.' not in name and len(name) <= rbconfig.maxlen_uname and not dns_entries.has_key(name):
 					dns_entries[name] = 1
 					add_entry(name, '%s Host entry' % host)
 
@@ -163,7 +163,7 @@ def main():
 		if ldap_reserveds.has_key(k):
 			if not ldap_reserveds_static.has_key(k) and v != ldap_reserveds[k]:
 				if not opt.test:
-					udb.ldap.modify_s('uid=%s,%s' % (k, rbconfig.ldap_reserved_tree), (ldap.MOD_REPLACE, 'description', v))
+					udb.ldap.modify_s('uid=%s,%s' % (k, rbconfig.ldap_reserved_tree), ((ldap.MOD_REPLACE, 'description', v),))
 				else:
 					print 'modify %-8s [%s] [%s]' % (k, v, ldap_reserveds[k])
 				total_mods += 1
