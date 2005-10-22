@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.11 $'
+__version__ = '$Revision: 1.12 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1148,10 +1148,17 @@ def checkdb():
 	re_mail = re.compile(r'.+@.*dcu\.ie', re.I)
 	set_header('User database problems')
 
+	reserved = udb.dict_reserved_desc()
+
 	for uid in udb.list_users():
 		usr = RBUser(uid=uid)
 		udb.get_user_byname(usr)
 
+		desc = reserved.get(uid)
+		if desc:
+			show_header()
+			print '%-*s  is reserved: %s' % (rbconfig.maxlen_uname, uid, desc)
+			
 		if not uidNumbers.has_key(usr.uidNumber):
 			uidNumbers[usr.uidNumber] = [uid]
 		else:
