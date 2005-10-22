@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.10 $'
+__version__ = '$Revision: 1.11 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1157,9 +1157,14 @@ def checkdb():
 		else:
 			uidNumbers[usr.uidNumber].append(uid)
 
-		if usr.yearsPaid != None and not -1 <= usr.yearsPaid <= 5:
-			show_header()
-			print '%-*s  has bogus yearsPaid: %s' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
+		if usr.yearsPaid != None:
+			if not -1 <= usr.yearsPaid <= 5:
+				show_header()
+				print '%-*s  has bogus yearsPaid: %s' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
+
+			if usr.newbie and usr.yearsPaid < 1:
+				show_header()
+				print '%-*s  is a newbie but is unpaid (yearsPaid = %s)' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
 
 		if usr.yearsPaid == None and usr.usertype in ('member', 'associat', 'staff'):
 			show_header()
@@ -1230,14 +1235,8 @@ def checkdb():
 def stats():
 	"""Show database and account statistics."""
 
-	raise RBFatalError("NOT IMPLEMENTED YET")
-
-	if not opt.aconly:
-		print header('User database stats')
-		udb.stats()
-	if not opt.dbonly:
-		print header('Account stats')
-		acc.stats()
+	print header('User database stats')
+	udb.stats()
 
 def create_uidNumber():
 	"""Fine next available uidNumber and write it out to uidNumber text file."""
