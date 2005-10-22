@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.4 $'
+__version__ = '$Revision: 1.5 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -973,42 +973,89 @@ class RBUserDB:
 	def stats(self):
 		"""Print database statistics on standard output."""
 
-		raise RBFatalError("NOT IMLEMENTED YET")
+		usertypes = {}
+		categories = (
+			'paid', 'unpaid', 'nonpay', 'newbie',
+			'signed_paid', 'signed_unpaid', 'signed_nonpay', 'signed_newbie',
+			'nosign_paid', 'nosign_unpaid', 'nosign_nonpay', 'nosign_newbie',
+			'TOTAL'
+		)
+		for k in rbconfig.usertypes:
+			usertypes[k] = dict([(c,0) for c in categories])
 
-		tmp = {}
-		for i in rbconfig.usertypes_list:
-			tmp[i] = 0
+		for uid in self.list_users():
+			usr = RBUser(uid=uid)
+			self.get_user_byname(usr)
 
-		self.cur.execute("SELECT usertype, count(*) FROM users GROUP BY usertype")
-		for u, c in self.cur.fetchall():
-			tmp[u] = c
+			usertypes[usr.usertype]['TOTAL'] += 1
 
-		for i in rbconfig.usertypes_list:
-			print "%20s %5d" % (i, tmp[i])
+			signed = not self.opt.dbonly and os.path.exists('%s/%s' % (rbconfig.dir_signaway_state, uid))
+			pay = usr.yearsPaid == None and 'nonpay' or usr.yearsPaid > 0 and 'paid' or 'unpaid'
+
+			usertypes[usr.usertype][pay] += 1
+			usertypes[usr.usertype]['%s_%s' % (not signed and 'nosign' or 'signed', pay)] += 1
+
+			if usr.newbie:
+				usertypes[usr.usertype]['newbie'] += 1
+				usertypes[usr.usertype]['%s_newbie' % (not signed and 'nosign' or 'signed')] += 1
+
+		ordered_usertypes = list(rbconfig.usertypes_list) + [i for i in rbconfig.usertypes if i not in rbconfig.usertypes_list]
+
+		# Print out table.
+		#
+		print " " * 9,
+		for c in categories:
+			if len(c) > 6:
+				print "%7s" % c[:6],
+			else:
+				print " " * 7,
+		print
+
+		print " " * 9,
+		for c in categories:
+			if len(c) > 6:
+				print "%7.6s" % c[-(len(c)-6):],
+			else:
+				print "%7s" % c,
+		print
+
+		print " " * 9,
+		for i in range(len(categories)):
+			print ' ', '=' * 5,
+		print
+
+		# Work out category totals.
+		#
+		category_totals = dict([(c,0) for c in categories])
+
+		for u in ordered_usertypes:
+			print "%9s" % u,
+			ut = usertypes[u]
+			for c in categories:
+				print "%7d" % ut[c],
+				category_totals[c] += ut[c]
+			print
+
+		print " " * 9,
+		for i in range(len(categories)):
+			print ' ', '=' * 5,
+
+		print
+		print '%9s' % 'ALL',
+		for c in categories:
+			print "%7d" % category_totals[c],
+		print
+		print
 		
-		print "%s  %s" % ("-" * 20, "-" * 4)
-		
-		self.cur.execute("SELECT COUNT(*) FROM users")
-		print "%20s %5d\n" % ('Total userdb entries', self.cur.fetchone()[0])
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE years_paid > 0")
-		print "%20s %5d" % ('Paid', self.cur.fetchone()[0])
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE years_paid < 1")
-		print "%20s %5d" % ('Not paid', self.cur.fetchone()[0])
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE years_paid IS NOT NULL")
-		print "%s  %s" % ("-" * 20, "-" * 4)
-		print "%20s %5d\n" % ('Total paying users', self.cur.fetchone()[0])
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE (usertype = 'member' OR usertype = 'committe' OR usertype = 'staff') AND years_paid > 0")
-		print "%20s %5d" % ('Paid members', self.cur.fetchone()[0])
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE (usertype = 'member' OR usertype = 'staff') AND years_paid > 0")
-		print "%20s %5.0f (square root of paid non-cmte members, rounded up)" % ('Quorum', math.ceil(math.sqrt(self.cur.fetchone()[0])))
-		
-		self.cur.execute("SELECT COUNT(*) FROM users WHERE newbie = 't'")
-		print "%20s %5d (since start of year)" % ('New', self.cur.fetchone()[0])
+		t = 0
+		for u in 'member', 'committe', 'staff':
+			t += usertypes[u]['paid']
+
+		print "Total paid members, committee & staff:", t
+		print "Quorum (rounded-up square root of above):", math.ceil(math.sqrt(t))
+		print "'Active' users (paid and non-paying signed-in users):", category_totals['signed_paid'] + category_totals['signed_nonpay']
+		print "%d of %d newbies signed-in (%d%%)" % (category_totals['signed_newbie'], category_totals['newbie'], 100.0 * category_totals['signed_newbie'] / category_totals['newbie'])
+		print
 
 	def crypt(self, password):
 		"""Return crypted DES password."""
