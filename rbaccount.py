@@ -25,7 +25,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.5 $'
+__version__ = '$Revision: 1.6 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -287,15 +287,6 @@ class RBAccount:
 			print 'Home directory does not exist'
 		print "%13s: %s" % ('logged in', os.path.exists('%s/%s' % (rbconfig.dir_signaway_state, usr.uid)) and 'true' or 'false')
 
-	#---------------------------------------------------------------------#
-	# MISCELLANEOUS METHODS                                               #
-	#---------------------------------------------------------------------#
-	
-	def stats(self):
-		"""Print account statistics on standard output."""
-
-		print "%20s %5d (signed agreement)" % ('Logged in', len(os.listdir(rbconfig.dir_signaway_state)))
-		
 	#---------------------------------------------------------------------#
 	# USER CHECKING AND INFORMATION RETRIEVAL METHODS                     #
 	#---------------------------------------------------------------------#
