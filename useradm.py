@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.13 $'
+__version__ = '$Revision: 1.14 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -546,9 +546,7 @@ def resetpw():
 	udb.get_user_byname(usr)
 	usr.passwd = rbconfig.gen_passwd()
 
-	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
-		print 'ABORTING.'
-		return
+	check_paid(usr)
 
 	get_mailuser(usr)
 	
@@ -569,9 +567,7 @@ def resetsh():
 	get_username(usr)
 	udb.get_user_byname(usr)
 
-	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
-		print 'ABORTING.'
-		return
+	check_paid(usr)
 	
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
@@ -619,9 +615,7 @@ def setshell():
 	get_username(usr)
 	udb.get_user_byname(usr)
 
-	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
-		print 'ABORTING.'
-		return
+	check_paid(usr)
 
 	get_shell(usr)
 		
@@ -1164,6 +1158,13 @@ def checkdb():
 		else:
 			uidNumbers[usr.uidNumber].append(uid)
 
+		if usr.usertype == 'member':
+			try:
+				udb.get_student_byid(usr)
+			except RBWarningError:
+				show_header()
+				print '%-*s  is a member without a valid DCU student id: %s' % (rbconfig.maxlen_uname, uid, usr.id)
+			
 		if usr.yearsPaid != None:
 			if not -1 <= usr.yearsPaid <= 5:
 				show_header()
@@ -2032,6 +2033,10 @@ def get_shell(usr):
 				break
 		else:
 			break
+
+def check_paid(usr):
+	if usr.yearsPaid != None and usr.yearsPaid < 1 and not yesno('WARNING: This user has not renewed, continue?', 0):
+		raise RBFatalError('Aborting, user has not paid.')
 
 #-----------------------------------------------------------------------------#
 # ERROR HANDLING                                                              #
