@@ -25,7 +25,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.6 $'
+__version__ = '$Revision: 1.7 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -229,11 +229,6 @@ class RBAccount:
 		# important!!
 		#
 		self.cmd("%s -Rh %s %s %s" % (rbconfig.command_chgrp, newusr.gidNumber, self.shquote(newusr.homeDirectory), self.shquote(rbconfig.gen_webtree(oldusr.uid))))
-		
-		# Change crontab group ownership to the new group.
-		#
-		if os.path.isfile("/var/spool/cron/crontabs/%s" % oldusr.uid):
-			self.wrapper(os.chown, "/var/spool/cron/crontabs/%s " % oldusr.uid, newusr.uidNumber, newusr.gidNumber)
 		
 		# Add/remove from committee mailing list as appropriate.
 		#
