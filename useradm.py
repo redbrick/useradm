@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.14 $'
+__version__ = '$Revision: 1.15 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1490,14 +1490,15 @@ Hey there,
 It's that time again to renew your RedBrick account!
 Membership prices, as set by the SFC, are as follows:
 
-  Members      ¤4
-  Associates   ¤6
-  Staff        ¤8   
-  Guests      ¤10
+  Members      EUR 4
+  Associates   EUR 6
+  Staff        EUR 8   
+  Guests       EUR 10
 
 Note: if you have left DCU, you need to apply for associate membership.
 
-Details of how to pay are on our website here:
+You can pay in person, by lodging money into our account, electronic bank
+transfer, or even PayPal! All the details you need are here:
 
 http://www.redbrick.dcu.ie/help/joining/
 
@@ -1507,10 +1508,10 @@ Please Note!
 	if usr.yearsPaid == 0:
 		fd.write(
 """
-If you do not renew, your account will be disabled. Your account will
-remain on the system for a grace period of a year - you just won't be
-able to login. So don't worry, it won't be deleted any time soon! You
-can renew at any time during the year.
+If you do not renew within the next month, your account will be disabled. 
+Your account will remain on the system for a grace period of a year - you 
+just won't be able to login. So don't worry, it won't be deleted any time 
+soon! You can renew at any time during the year.
 """)
 	else:
 		fd.write(
