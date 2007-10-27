@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.9 $'
+__version__ = '$Revision: 1.10 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -226,8 +226,7 @@ def gen_quotas(usertype = None):
 	"""
 
 	return {
-		'/webtree': (175000, 200000, 800000, 1000000),
-		'/home': (175000, 200000, 800000, 1000000)
+		'/storage': (1000000, 1100000, 800000, 1000000)
 	}
 
 def gen_extra_user_files(username):
