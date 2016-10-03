@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.15 $'
+__version__ = '$Revision: 1.16 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -36,6 +36,8 @@ cmds = {
 	'add':			('Add new user', '[username]'),
 	'renew':		('Renew user', '[username]'),
 	'update':		('Update user', '[username]'),
+	'altmail':		('Change Alternate Email', '[username]'),
+	'activate':		('Re-Enable a club/soc account', '[username]'),
 	'delete':		('Delete user', '[username]'),
 	'resetpw':		('Set new random password and mail it to user', '[username]'),
 	'setshell':		('Set user\'s shell', '[username [shell]]'),
@@ -45,6 +47,7 @@ cmds = {
 	'disuser':		('Disuser a user', '[username [new username]]'),
 	'reuser':		('Re-user a user', '[username]'),
 	'show':			('Show user details', '[username]'),
+	'info':			('Show shorter user details', '[username]'),
 	'freename':		('Check if a username is free', '[username]'),
 	'search':		('Search user and dcu databases', '[username]'),
 	'pre_sync':		('Dump LDAP tree for use by sync before new tree is loaded', ''),
@@ -69,9 +72,9 @@ cmds = {
 
 # Command groups
 #
-cmds_single_user = ('add', 'delete', 'renew', 'update', 'rename', 'convert')
+cmds_single_user = ('add', 'delete', 'renew', 'update', 'altmail', 'activate', 'rename', 'convert')
 cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser', 'setshell')
-cmds_single_user_info = ('show', 'freename')
+cmds_single_user_info = ('show', 'info', 'freename')
 cmds_interactive_batch = ('search', 'sync', 'sync_dcu_info')
 cmds_batch = ('newyear', 'unpaid_warn', 'unpaid_disable', 'unpaid_delete')
 cmds_batch_info = ('pre_sync', 'list_users', 'list_unavailable', 'list_newbies', 'list_renewals', 'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
@@ -217,7 +220,7 @@ def main():
 	opt.args = args
 
 	try:
-		# Call function for specific mode.
+	# Call function for specific mode.
 		eval(opt.mode + "()")
 	except KeyboardInterrupt:
 		print
@@ -496,6 +499,109 @@ def update():
 	print "User updated:", usr.uid
 	udb.update(usr)
 
+def altmail():
+	"""Update user."""
+
+	# Update mode only works on database.
+	opt.dbonly = 1
+	opt.aconly = 0
+
+	usr = RBUser()
+	get_username(usr)
+	udb.get_user_byname(usr)
+#	get_newbie(usr)
+	defid = usr.id
+
+	while 1:
+		try:
+			get_id(usr)
+			newusr = RBUser(id = usr.id)
+			if usr.id != None:
+				udb.get_dcu_byid(newusr)
+		except RBError, e:
+			if not rberror(e, opt.id == None):
+				break
+			usr.id = defid
+		else:
+			break
+
+	get_email(usr, (newusr.altmail,))
+	get_updatedby(usr)
+
+	# End of user interaction, set options for override & test mode.
+	udb.setopt(opt)
+	
+	print "User updated:", usr.uid
+	udb.update(usr)
+
+def activate():
+	"""Update user."""
+
+	# Update mode only works on database.
+#	opt.dbonly = 1
+#	opt.aconly = 0
+	
+	print " "
+	print "To confirm society committee details check:"
+	print "https://www.dcu.ie/portal/index.php3?club_soc_registration_function=8"
+	print "Continuing will mail a new password for this account,"
+	print "and set the shell to /usr/local/shells/zsh"
+	print " "
+
+	usr = RBUser()
+	get_username(usr)
+	udb.get_user_byname(usr)
+
+#	if we're activating them they're hardly newbies
+#	get_newbie(usr)
+	defid = usr.id
+
+	while 1:
+		try:
+			get_id(usr)
+			newusr = RBUser(id = usr.id)
+			if usr.id != None:
+				udb.get_dcu_byid(newusr)
+		except RBError, e:
+			if not rberror(e, opt.id == None):
+				break
+			usr.id = defid
+		else:
+			break
+
+	get_email(usr, (newusr.altmail,))
+
+# everyone likes zsh
+#        get_shell(usr)
+	usr.loginShell = "/usr/local/shells/zsh"
+
+
+# Don't bother asking, assume we want to do it
+#	get_setpasswd(usr)
+
+# Again, we always want to do this.
+#       get_mailuser(usr)
+
+	get_updatedby(usr)
+
+
+        usr.passwd = rbconfig.gen_passwd()
+        print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
+        udb.set_passwd(usr)
+
+
+        print "User mailed:", usr.altmail
+        mailuser(usr)
+
+	# End of user interaction, set options for override & test mode.
+	udb.setopt(opt)
+        acc.setopt(opt)
+	
+	udb.update(usr)
+        print 'Account email & shell set for', usr.uid, '(%s)' % usr.loginShell
+        udb.set_shell(usr)
+
+
 def rename():
 	"""Rename user."""
 
@@ -553,7 +659,8 @@ def resetpw():
 	# End of user interaction, set options for override & test mode.
 	udb.setopt(opt)
 
-	print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
+	#print "Account password reset: %s password: %s" % (usr.uid, usr.passwd)
+	print "Account password reset: %s " % (usr.uid)
 	udb.set_passwd(usr)
 
 	if opt.mailuser:
@@ -644,6 +751,17 @@ def show():
 	udb.show(usr)
 	print header('Account Information')
 	acc.show(usr)
+
+def info():
+	"""Show user's database and account details."""
+
+	usr = RBUser()
+	get_username(usr, check_user_exists = 0)
+	# End of user interaction, set options for override & test mode.
+	udb.setopt(opt)
+	udb.get_user_byname(usr)
+	print header('User Information')
+	udb.info(usr)
 
 def freename():
 	"""Check if a username is free."""
@@ -934,7 +1052,7 @@ def sync():
 			acc.check_account_byname(usr)
 		except RBFatalError:
 			usr.passwd = rbconfig.gen_passwd()
-			print 'Account password set for %s password: %s' % (usr.uid, usr.passwd)
+#			print 'Account password set for %s password: %s' % (usr.uid, usr.passwd)
 			udb.set_passwd(usr)
 			print "Account created: %s %s" % (usr.usertype, usr.uid)
 			acc.add(usr)
@@ -1180,6 +1298,8 @@ def checkdb():
 			if usr.yearsPaid > 0 and not udb.valid_shell(usr.loginShell):
 				show_header()
 				print '%-*s  is paid but has an invalid shell: %s' % (rbconfig.maxlen_uname, uid, usr.loginShell)
+			if usr.yearsPaid < -1:
+				print '%-*s  has should have been deleted: %s' % (rbconfig.maxlen_uname, uid, usr.yearsPaid)
 
 		if usr.yearsPaid == None and usr.usertype in ('member', 'associat', 'staff'):
 			show_header()
@@ -1218,9 +1338,10 @@ def checkdb():
 			show_header()
 			print "%-*s  is a %s without a DCU altmail address: %s" % (rbconfig.maxlen_uname, uid, usr.usertype, usr.altmail)
 
-		if not usr.userPassword[7].isalnum() and not usr.userPassword[7] in '/.':
-			show_header()
-			print '%-*s  has a disabled password: %s' % (rbconfig.maxlen_uname, uid, usr.userPassword)
+# commented by receive, it makes stuff crash
+#		if not usr.userPassword[7].isalnum() and not usr.userPassword[7] in '/.':
+#			show_header()
+#			print '%-*s  has a disabled password: %s' % (rbconfig.maxlen_uname, uid, usr.userPassword)
 			
 		if usr.usertype != 'redbrick':
 			if grp != usr.usertype:
@@ -1419,17 +1540,17 @@ def mailuser(usr):
 	
 	fd = sendmail_open()
 	fd.write(
-"""From: RedBrick Admin Team <admins@redbrick.dcu.ie>
-Subject: Your RedBrick Account
+"""From: Redbrick Admin Team <admins@redbrick.dcu.ie>
+Subject: Welcome to Redbrick! - Your Account Details
 To: %s
 Reply-To: admin-request@redbrick.dcu.ie
 
 """ % usr.altmail)
 	if usr.newbie:
-		fd.write("Welcome to RedBrick, the DCU Networking Society! Thank you for joining.")
+		fd.write("Welcome to Redbrick, the DCU Networking Society! Thank you for joining.")
 	else:
-		fd.write("Welcome back to RedBrick, the DCU Networking Society! Thank you for renewing.")
-	fd.write("\n\nYour RedBrick Account details are:\n\n")
+		fd.write("Welcome back to Redbrick, the DCU Networking Society! Thank you for renewing.")
+	fd.write("\n\nYour Redbrick Account details are:\n\n")
 
 	fd.write('%21s: %s\n' % ('username', usr.uid))
 	if usr.passwd:
@@ -1445,11 +1566,13 @@ Reply-To: admin-request@redbrick.dcu.ie
 
 	fd.write(
 """
-your RedBrick webpage: http://www.redbrick.dcu.ie/~%s
-  your RedBrick email: %s@redbrick.dcu.ie
+-------------------------------------------------------------------------------
 
-You can find out how to login at:
-  http://www.redbrick.dcu.ie/help/login
+your Redbrick webpage: http://www.redbrick.dcu.ie/~%s
+  your Redbrick email: %s@redbrick.dcu.ie
+
+You can find out more about our services at:
+  http://www.redbrick.dcu.ie/about/welcome
 """ % (usr.uid, usr.uid))
 
 	fd.write(
@@ -1459,12 +1582,12 @@ We recommend that you change your password as soon as you login.
 Problems with your password or wish to change your username? Contact:
   admin-request@redbrick.dcu.ie
 
-Problems using RedBrick in general or not sure what to do? Contact:
+Problems using Redbrick in general or not sure what to do? Contact:
   helpdesk-request@redbrick.dcu.ie
 
 Have fun!
 
-  - RedBrick Admin Team
+  - Redbrick Admin Team
 """)
 
 	sendmail_close(fd)
@@ -1474,8 +1597,8 @@ def mail_unpaid(usr):
 
 	fd = sendmail_open()
 	fd.write(
-"""From: RedBrick Admin Team <admins@redbrick.dcu.ie>
-Subject: Time to renew your RedBrick account!
+"""From: Redbrick Admin Team <admins@redbrick.dcu.ie>
+Subject: Time to renew your Redbrick account! - Note our Bank A/C Details have changed.
 To: %s@redbrick.dcu.ie
 """  % usr.uid)
 
@@ -1487,11 +1610,11 @@ To: %s@redbrick.dcu.ie
 
 Hey there,
 
-It's that time again to renew your RedBrick account!
-Membership prices, as set by the SFC, are as follows:
+It's that time again to renew your Redbrick account!
+Membership prices, as set by the SLC, are as follows:
 
   Members      EUR 4
-  Associates   EUR 6
+  Associates   EUR 8
   Staff        EUR 8   
   Guests       EUR 10
 
@@ -1502,13 +1625,25 @@ transfer, or even PayPal! All the details you need are here:
 
 http://www.redbrick.dcu.ie/help/joining/
 
+Our bank details are:
+
+a/c name: DCU Redbrick Society
+IBAN: IE59BOFI90675027999600
+BIC: BOFIIE2D
+a/c number: 27999600
+sort code: 90 - 67 - 50
+
+
+
 Please Note!
 ------------""")
+######Change the message below every year######
+
 
 	if usr.yearsPaid == 0:
 		fd.write(
 """
-If you do not renew within the next month, your account will be disabled. 
+If you do not renew by the 30th October 2016, your account will be disabled. 
 Your account will remain on the system for a grace period of a year - you 
 just won't be able to login. So don't worry, it won't be deleted any time 
 soon! You can renew at any time during the year.
@@ -1528,7 +1663,7 @@ If in fact you have renewed and have received this email in error, it is
 important you let us know. Just reply to this email and tell us how and
 when you renewed and we'll sort it out.
 
-For your information, your current RedBrick account details are:
+For your information, your current Redbrick account details are:
 
              username: %s
          account type: %s
@@ -1548,7 +1683,7 @@ For your information, your current RedBrick account details are:
 If any of the above details are wrong, please correct them when you
 renew!
 
-  - RedBrick Admin Team
+  - Redbrick Admin Team
 """)
 	sendmail_close(fd)
 
@@ -1557,7 +1692,7 @@ def mail_committee(subject, body):
 
 	fd = sendmail_open()
 	fd.write(
-"""From: RedBrick Admin Team <admins@redbrick.dcu.ie>
+"""From: Redbrick Admin Team <admins@redbrick.dcu.ie>
 Subject: %s
 To: committee@redbrick.dcu.ie
 
@@ -1600,6 +1735,7 @@ def get_username(usr, check_user_exists = 1):
 			udb.check_username(usr.uid)
 
 			if check_user_exists:
+                                print "Checking user exists"
 				tmpusr = RBUser(uid = usr.uid)
 				udb.get_user_byname(tmpusr)
 				udb.check_user_byname(usr.uid)
