@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.8 $'
+__version__ = '$Revision: 1.9 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -79,7 +79,6 @@ class RBUserDB:
                                 raise RBFatalError("Unable to open DCU AD root password file")
                         fd.close()
 
-		
 		# Default protocol seems to be 2, set to 3.
 		ldap.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
 
@@ -118,7 +117,6 @@ class RBUserDB:
 		it is to be overridden.
 
 		"""
-
 		res = self.ldap.search_s(rbconfig.ldap_accounts_tree, ldap.SCOPE_ONELEVEL, 'uid=%s' % uid)
 		if res:
 			raise RBFatalError("Username '%s' is already taken by %s account (%s)" % (uid, res[0][1]['objectClass'][0], res[0][1]['cn'][0]))
@@ -360,7 +358,7 @@ class RBUserDB:
 	
 		"""
 
-		res = self.ldap_dcu.search_s(rbconfig.ldap_dcu_students_tree, ldap.SCOPE_SUBTREE, 'cn=%s' % usr.id)
+		res = self.ldap_dcu.search_s(rbconfig.ldap_dcu_students_tree, ldap.SCOPE_SUBTREE, 'employeeNumber=%s' % usr.id)
 		if res:
 			self.set_user_dcu(usr, res[0], override)
 			self.set_user_dcu_student(usr, res[0], override)
@@ -733,12 +731,12 @@ class RBUserDB:
 		for i in usr.attr_list_all:
 			if getattr(usr, i) != None:
 				print "%13s: %s" % (i, getattr(usr, i))
-        def info(self, usr):
-                """Show passwordless RBUser object information on standard output."""
+	def info(self, usr):
+		"""Show passwordless RBUser object information on standard output."""
 
-                for i in usr.attr_list_info:
-                        if getattr(usr, i) != None:
-                                print "%13s: %s" % (i, getattr(usr, i))
+		for i in usr.attr_list_info:
+			if getattr(usr, i) != None:
+				print "%13s: %s" % (i, getattr(usr, i))
 
 	def show_diff(self, usr, oldusr):
 		"""
