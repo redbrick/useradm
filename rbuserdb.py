@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.7 $'
+__version__ = '$Revision: 1.8 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -733,6 +733,12 @@ class RBUserDB:
 		for i in usr.attr_list_all:
 			if getattr(usr, i) != None:
 				print "%13s: %s" % (i, getattr(usr, i))
+        def info(self, usr):
+                """Show passwordless RBUser object information on standard output."""
+
+                for i in usr.attr_list_info:
+                        if getattr(usr, i) != None:
+                                print "%13s: %s" % (i, getattr(usr, i))
 
 	def show_diff(self, usr, oldusr):
 		"""
