@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.6 $'
+__version__ = '$Revision: 1.7 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -51,7 +51,8 @@ class RBUserDB:
 		self.ldap = None
 		self.ldap_dcu = None
 
-	def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None, dcu_uri = rbconfig.ldap_dcu_uri):
+	#def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None, dcu_uri = rbconfig.ldap_dcu_uri):
+	def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None, dcu_uri = rbconfig.ldap_dcu_uri,dcu_dn = rbconfig.ldap_dcu_rbdn, dcu_pw = None):
 		"""Connect to databases.
 	
 		Custom URI, DN and password may be given for RedBrick LDAP.
@@ -69,6 +70,15 @@ class RBUserDB:
 			except IOError:
 				raise RBFatalError("Unable to open LDAP root password file")
 			fd.close()
+		 
+		if not dcu_pw:
+                        try:
+                                fd = open(rbconfig.ldap_dcu_rbpw, 'r')
+                                dcu_pw = fd.readline().rstrip()
+                        except IOError:
+                                raise RBFatalError("Unable to open DCU AD root password file")
+                        fd.close()
+
 		
 		# Default protocol seems to be 2, set to 3.
 		ldap.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
@@ -79,7 +89,8 @@ class RBUserDB:
 		
 		# Connect to DCU LDAP (anonymous bind).
 		self.ldap_dcu = ldap.initialize(dcu_uri)
-		self.ldap_dcu.simple_bind_s('', '') 
+#		self.ldap_dcu.simple_bind_s('', '')
+		self.ldap_dcu.simple_bind_s(dcu_dn,dcu_pw) 
 
 	def close(self):
 		"""Close database connections."""
