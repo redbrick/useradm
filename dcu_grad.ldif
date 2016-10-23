@@ -1,0 +1,70 @@
+# extended LDIF
+#
+# LDAPv3
+# base <OU=Students,DC=ad,DC=dcu,DC=ie> with scope subtree
+# filter: (mail=)
+# requesting: ALL
+#
+
+# Students, ad.dcu.ie
+dn: CN=doej2,OU=Students,DC=ad,DC=dcu,DC=ie
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: doej2
+sn: doe
+physicalDeliveryOfficeName: CASE2012
+givenName: Jane Graduate Doe
+distinguishedName: CN=doej2,OU=Students,DC=ad,DC=dcu,DC=ie
+instanceType: 4
+whenCreated: 20090129175135.0Z
+whenChanged: 20161019124725.0Z
+displayName: Jane Graduate Doe
+uSNCreated: 524006
+otherPager: NoSyncOff365
+uSNChanged: 162883333
+proxyAddresses: 11111111@mail.dcu.ie
+proxyAddresses: doej2@mail.dcu.ie
+employeeNumber: 11111111
+name: doej2
+objectGUID:: wNkpatcE90+6SE22Js++xg==
+userAccountControl: 512
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+homeDirectory: \\ad\data\stuhome\58\43\doej2
+homeDrive: H:
+badPasswordTime: 131203221626293397
+lastLogon: 131203221822085924
+logonHours:: ////////////////////////////
+pwdLastSet: 131122089996866692
+primaryGroupID: 513
+objectSid:: AQUAAAAAAAUVAAAAn7sVMyvLTtysMee34noBAA==
+accountExpires: 9223372036854775807
+logonCount: 2
+sAMAccountName: doej2
+division: 83b6762a866dbb4d07a598b6d5ef2e1c1b5b6b03
+sAMAccountType: 805306368
+userPrincipalName: doej2@ad.dcu.ie
+objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=ad,DC=dcu,DC=ie
+dSCorePropagationData: 20160916090317.0Z
+dSCorePropagationData: 20160303140034.0Z
+dSCorePropagationData: 20151106102855.0Z
+dSCorePropagationData: 20150828095415.0Z
+dSCorePropagationData: 16010714223649.0Z
+lastLogonTimestamp: 131213548457497184
+uid: doej2
+mail: janegraduate.doe2@mail.dcu.ie
+preferredLanguage: ENGLISH
+uidNumber: 59718
+gidNumber: 10000
+gecos: Jane Graduate Doe, 58432015
+unixHomeDirectory: /home/students/case/case4/doej2
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
