@@ -23,3 +23,10 @@ Useradm is used to manage Redbrick's membership.
 
 ### Renew User
 
+1. Queries RB LDAP using user nickname.
+2. If Yearspaid <1, set yearsPaid=1
+3.  *problem* if the user's shell is /usr/local/shell/expired and is renewed, shell isn't reset to /usr/local/shell/zsh
+4.  *problem* if renewing && usertype is associat/committe it will hint at restoring usertype to member
+	- For committe this wouldn't be as bad, but for associat this poses an issue frequently.
+
+
