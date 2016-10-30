@@ -18,7 +18,7 @@ __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
 
-dir_rrs = (os.path.dirname(__file__) or '.') + '/'
+dir_rrs = (os.path.dirname(__file__) or '.') + os.sep
 
 # Maximum length of usernames and groups.
 
@@ -56,9 +56,9 @@ ldap_dcu_alumni_tree = 'OU=Alumni,DC=ad,DC=dcu,DC=ie'
 # DNS zones RedBrick is authorative for.
 
 dns_zones = (
-	'redbrick.dcu.ie',
-	'club.dcu.ie',
-	'soc.dcu.ie',
+        'redbrick.dcu.ie',
+        'club.dcu.ie',
+        'soc.dcu.ie',
 )
 
 # Mailman list suffixes.
@@ -87,21 +87,21 @@ shell_expired = '/usr/local/shells/expired'
 # Unix group files: (group file, hostname) pairs.
 
 files_group = (
-	('/etc/group', 'Deathray'),
-	('/local/share/var/carbon/group', 'Carbon')
+        ('/etc/group', 'Deathray'),
+        ('/local/share/var/carbon/group', 'Carbon')
 )
 
 # host files: (host file, hostname) pairs.
 
 files_host = (
-	('/etc/hosts', 'Deathray'),
-	('/local/share/var/carbon/hosts', 'Carbon')
+        ('/etc/hosts', 'Deathray'),
+        ('/local/share/var/carbon/hosts', 'Carbon')
 )
 
 # Email alias files.
 
 files_alias = (
-	('/etc/mail/exim_aliases.txt', 'Mail alias'),
+        ('/etc/mail/exim_aliases.txt', 'Mail alias'),
 )
 
 # Commands.
@@ -115,26 +115,26 @@ command_sendmail = '/usr/sbin/sendmail'
 # Valid account usertypes and descriptions.
 #
 usertypes = {
-	'founders':	'RedBrick founder',
-	'member':	'Normal member',
-	'associat':	'Graduate/associate member',
-	'staff':	'DCU staff member',
-	'society':	'DCU society',
-	'club':		'DCU club',
-	'projects':	'RedBrick/DCU/Course project account',
-	'guest':	'Guest account',
-	'intersoc':	'Account for society from another college',
-	'committe':	'Committee member or a position account',
-	'redbrick':	'RedBrick related account',
-	'dcu':		'DCU related account'
+        'founders':     'RedBrick founder',
+        'member':       'Normal member',
+        'associat':     'Graduate/associate member',
+        'staff':        'DCU staff member',
+        'society':      'DCU society',
+        'club':         'DCU club',
+        'projects':     'RedBrick/DCU/Course project account',
+        'guest':        'Guest account',
+        'intersoc':     'Account for society from another college',
+        'committe':     'Committee member or a position account',
+        'redbrick':     'RedBrick related account',
+        'dcu':          'DCU related account'
 }
 
 # "Ordered" list of usertypes for listing with the exception of founders.
 #
 usertypes_list = (
-	'member', 'associat', 'staff', 'committe',
-	'society', 'club', 'dcu',
-	'projects', 'redbrick', 'intersoc', 'guest'
+        'member', 'associat', 'staff', 'committe',
+        'society', 'club', 'dcu',
+        'projects', 'redbrick', 'intersoc', 'guest'
 )
 
 # List of paying usertypes.
@@ -148,9 +148,9 @@ usertypes_dcu = ('member', 'associat', 'staff', 'committe')
 # Pseudo usertypes for conversion to committee positions.
 #
 convert_usertypes = {
-	'admin':	'Elected admin',
-	'webmaster':	'Elected webmaster',
-	'helpdesk':	'Elected helpdesk'
+        'admin':        'Elected admin',
+        'webmaster':    'Elected webmaster',
+        'helpdesk':     'Elected helpdesk'
 }
 
 # Supplementary groups when converting an account to given usertype.
@@ -158,9 +158,9 @@ convert_usertypes = {
 # Format: 'usertype': 'a string of comma seperated groups with no spaces'
 #
 convert_extra_groups = {
-	'admin':	'root,log',
-	'webmaster':	'root,log,webgroup',
-	'helpdesk':	'helpdesk'
+        'admin':        'root,log',
+        'webmaster':    'root,log,webgroup',
+        'helpdesk':     'helpdesk'
 }
 
 # Actual primary group to use when converting an account to given usertype
@@ -169,9 +169,9 @@ convert_extra_groups = {
 # Format: 'usertype': 'actual unix group name'
 #
 convert_primary_groups = {
-	'admin':	'committe',
-	'webmaster':	'committe',
-	'helpdesk':	'committe'
+        'admin':        'committe',
+        'webmaster':    'committe',
+        'helpdesk':     'committe'
 }
 
 #---------------------------------------------------------------------#
@@ -179,48 +179,49 @@ convert_primary_groups = {
 #---------------------------------------------------------------------#
 
 def gen_passwd():
+    pass
 
 def gen_homedir(username, usertype):
-	"""Construct a user's home directory path given username and usertype."""
-	
-	if usertype in ('member', 'associat'):
-		hash = username[0] + '/'
-	else:
-		hash = ''
+    """Construct a user's home directory path given username and usertype."""
 
-	return '%s/%s/%s%s' % (dir_home, usertype, hash, username)
+    if usertype in ('member', 'associat'):
+        hash = username[0] + os.sep
+    else:
+        hash = ''
+
+    return '%s/%s/%s%s' % (dir_home, usertype, hash, username)
 
 def gen_webtree(username):
-	"""Generate a user's webtree path for given username."""
+    """Generate a user's webtree path for given username."""
 
-	return '%s/%s/%s' % (dir_webtree, username[0], username)
+    return os.path.join(dir_webtree, username[0], username)
 
 def gen_quotas(usertype = None):
-	"""Returns a dictionary of quota limits for filesystems (possibly
-	depending on the given usertype, if any).
+    """Returns a dictionary of quota limits for filesystems (possibly
+    depending on the given usertype, if any).
 
-	The format of the quota dictionary is as follows:
+    The format of the quota dictionary is as follows:
 
-	'filesystem': (block quota soft, block quota hard,
-	               inode quota soft, inode quota hard),
-	 ...
+    'filesystem': (block quota soft, block quota hard,
+                   inode quota soft, inode quota hard),
+     ...
 
-	Block quota is in kilobytes, inode quota is number of inodes.
-	
-	"""
+    Block quota is in kilobytes, inode quota is number of inodes.
 
-	return {
-		'/storage': (1000000, 1100000, 800000, 1000000)
-	}
+    """
+
+    return {
+            '/storage': (1000000, 1100000, 800000, 1000000)
+    }
 
 def gen_extra_user_files(username):
-	"""Return list of files that may belong to the given user outside of
-	their main storage areas. For purposes of renaming or deleting."""
+    """Return list of files that may belong to the given user outside of
+    their main storage areas. For purposes of renaming or deleting."""
 
-	# XXX: need files for carbon now aswell.
+    # XXX: need files for carbon now aswell.
 
-	return  (
-		'%s/%s' % (dir_signaway_state, username),
-		'/var/mail/%s' % username,
-		'/var/spool/cron/crontabs/%s' % username
-	)
+    return  (
+            '%s/%s' % (dir_signaway_state, username),
+            '/var/mail/%s' % username,
+            '/var/spool/cron/crontabs/%s' % username
+    )

@@ -9,37 +9,37 @@
 #-----------------------------------------------------------------------------#
 
 __version__ = '$Revision: 1.2 $'
-__author__  = 'Cillian Sharkey'
+__author__ = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
 # CLASSES                                                                     #
 #-----------------------------------------------------------------------------#
 
 class RBError(Exception):
-	"""Base class for RedBrick exceptions"""
+    """Base class for RedBrick exceptions"""
 
-	def __init__(self, mesg):
-		"""Create new RBError object with given error message."""
+    def __init__(self, mesg):
+        """Create new RBError object with given error message."""
 
-		self.mesg = mesg
-	
-	def __str__(self):
-		"""Return exception error message."""
+        self.mesg = mesg
 
-		return "ERROR: %s" % self.mesg
+    def __str__(self):
+        """Return exception error message."""
+
+        return "ERROR: %s" % self.mesg
 
 class RBFatalError(RBError):
-	"""Class for fatal RedBrick exceptions"""
+    """Class for fatal RedBrick exceptions"""
 
-	def __str__(self):
-		"""Return exception error message."""
+    def __str__(self):
+        """Return exception error message."""
 
-		return "FATAL: %s" % self.mesg
+        return "FATAL: %s" % self.mesg
 
 class RBWarningError(RBError):
-	"""Class for warning RedBrick exceptions. These can be overrided."""
+    """Class for warning RedBrick exceptions. These can be overrided."""
 
-	def __str__(self):
-		"""Return exception error message."""
+    def __str__(self):
+        """Return exception error message."""
 
-		return "WARNING: %s" % self.mesg
+        return "WARNING: %s" % self.mesg
