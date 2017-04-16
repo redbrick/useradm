@@ -1,0 +1,116 @@
+# extended LDIF
+#
+# LDAPv3
+# base <OU=Students,DC=ad,DC=dcu,DC=ie> with scope subtree
+# filter: (cn=doej3)
+# requesting: ALL
+#
+
+# nimhaoc8, Students, ad.dcu.ie
+dn: CN=doej3,OU=Students,DC=ad,DC=dcu,DC=ie
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: doej3
+sn: Doe
+title: UG
+physicalDeliveryOfficeName: EPL2
+givenName: Jane
+distinguishedName: CN=doej3,OU=Students,DC=ad,DC=dcu,DC=ie
+instanceType: 4
+whenCreated: 20140909101138.0Z
+whenChanged: 20161013142244.0Z
+displayName: Jane Student Doe
+uSNCreated: 22222222
+memberOf: CN=2017-lg125,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-epl2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-dcu-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-bss-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-bss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-bss-hss-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2017-bss-hss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss-hss-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss-hss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg302,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg125,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg108,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-epl2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-ef213,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-dcu-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss_hss-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss_hss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss-ug2,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-bss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg358,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg325,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg318,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-lg316,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-ef212,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2016-ef210,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-ms136,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg135,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg133,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg131,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg1180,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg116,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg113,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-lg104,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-epl1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-ef110,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-ef108,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-bss_hss-ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-bss_hss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-bss-ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-bss-ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=2015-dcu-ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=dcu_ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=bss_ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=bss_hss_ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=bss_ug1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=epl1,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+memberOf: CN=bss_hss_ug,OU=Students,OU=Groups,DC=ad,DC=dcu,DC=ie
+uSNChanged: 222222222
+department: DCUBS / HSS L&G Programmes
+company: DCUBS/HSS
+proxyAddresses: 33333333@mail.dcu.ie
+proxyAddresses: doej3@mail.dcu.ie
+employeeNumber: 33333333
+name: doej3
+objectGUID:: UTA+/DUfKEaNgGBOI2dTOg==
+userAccountControl: 512
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+homeDirectory: \\ad\data\stuhome\14\43\doej3
+homeDrive: H:
+badPasswordTime: 131213462127173368
+lastLogon: 131057352884682244
+pwdLastSet: 130865702791373079
+primaryGroupID: 513
+objectSid:: AQUAAAAAAAUVAAAAn7sVMyvLTtysMee3AQUDAA==
+accountExpires: 9223372036854775807
+logonCount: 12
+sAMAccountName: doej3
+division: 50873d973af3cb758c0f19748b4c3fb33449b8ac
+sAMAccountType: 805306368
+userPrincipalName: doej3@ad.dcu.ie
+objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=ad,DC=dcu,DC=ie
+dSCorePropagationData: 20160916090340.0Z
+dSCorePropagationData: 20160303140150.0Z
+dSCorePropagationData: 20151106102856.0Z
+dSCorePropagationData: 16010101181633.0Z
+lastLogonTimestamp: 131208421493745951
+uid: doej3
+mail: jane.studentdoe3@mail.dcu.ie
+uidNumber: 91914
+gidNumber: 10000
+gecos: Jane Student Doe, 33333333
+unixHomeDirectory: /home/students/epl/epl2/doej3
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
