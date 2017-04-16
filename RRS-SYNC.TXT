@@ -2,7 +2,7 @@
 # Steps required to use a standalone RRS setup and then sync in changes
 # afterwards.
 #
-# $Id: RRS-SYNC.TXT,v 1.1 2003/10/24 16:10:30 cns Exp cns $
+# $Id: RRS-SYNC.TXT,v 1.2 2005/10/09 22:55:31 cns Exp $
 #
 
 #======================================================================

@@ -13,7 +13,7 @@ import random
 # DATA                                                                #
 #---------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.10 $'
+__version__ = '$Revision: 1.11 $'
 __author__  = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
@@ -28,7 +28,7 @@ maxlen_group = 8
 # Default LDAP account attribute values.
 
 ldap_default_objectClass = ['posixAccount', 'top', 'shadowAccount']
-ldap_default_hosts = ['carbon', 'prodigy']
+ldap_default_hosts = ['paphos', 'metharme']
 
 # RedBrick LDAP settings.
 
@@ -42,11 +42,16 @@ ldap_reserved_tree = 'ou=reserved,o=redbrick'
 
 # DCU LDAP settings.
 
-ldap_dcu_uri = 'ldap://atlas.dcu.ie'
-ldap_dcu_tree = 'o=dcu'
-ldap_dcu_students_tree = 'ou=students,o=dcu'
-ldap_dcu_staff_tree = 'ou=staff,o=dcu'
-ldap_dcu_alumni_tree = 'ou=alumni,o=dcu'
+ldap_dcu_uri = 'ldap://ad.dcu.ie'
+ldap_dcu_tree = 'o=ad,o=dcu,o=ie'
+ldap_dcu_rbdn = 'CN=rblookup,OU=Service Accounts,DC=ad,DC=dcu,DC=ie'
+ldap_dcu_rbpw = '/etc/dcu_ldap.secret'
+ldap_dcu_students_tree = 'OU=Students,DC=ad,DC=dcu,DC=ie'
+#'ou=students,dc=ad,dc=dcu,dc=ie'
+ldap_dcu_staff_tree = 'OU=Staff,DC=ad,DC=dcu,DC=ie'
+#'ou=staff,dc=ad,dc=dcu,dc=ie'
+ldap_dcu_alumni_tree = 'OU=Alumni,DC=ad,DC=dcu,DC=ie'
+#'ou=alumni,o=dcu'
 
 # DNS zones RedBrick is authorative for.
 
@@ -67,7 +72,7 @@ dir_webtree = '/webtree'
 dir_signaway_state = '/local/share/agreement/statedir'
 dir_daft = '/local/share/daft'
 dir_skel = '/etc/skel'
-dir_mailman = '/local/mailman'
+dir_mailman = '/var/lib/mailman'
 
 # Filenames.
 
@@ -101,7 +106,7 @@ files_alias = (
 
 # Commands.
 
-command_setquota = '/usr/local/sbin/setquota'
+command_setquota = '/usr/sbin/setquota'
 command_chown = '/bin/chown'
 command_chgrp = '/bin/chgrp'
 command_cp = '/bin/cp'
@@ -190,9 +195,9 @@ def gen_passwd():
 	numchars = '2 3 4 5 6 7 8 9'.split()
 	password = ''
 	offset = random.randrange(2)
-	for c in range(6):
+	for c in range(8):
 		password += passchars[(c + offset) % 2][random.randrange(len(passchars[(c + offset) % 2]))]
-	offset = random.randrange(2) and 6 or 0
+	offset = random.randrange(2) and 8 or 0
 	password = password[offset:] + numchars[random.randrange(len(numchars))] + numchars[random.randrange(len(numchars))] + password[:offset]
 	return password
 

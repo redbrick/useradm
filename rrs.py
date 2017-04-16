@@ -22,7 +22,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.5 $'
+__version__ = '$Revision: 1.6 $'
 __author__  = 'Cillian Sharkey'
 
 cmds = {

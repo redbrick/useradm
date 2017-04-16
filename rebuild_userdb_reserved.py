@@ -25,7 +25,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = "$Revision: 1.4 $"
+__version__ = "$Revision: 1.5 $"
 __author__ = "Cillian Sharkey"
 
 # Dictionary of (name, description) pairs to add.

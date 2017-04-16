@@ -25,7 +25,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.7 $'
+__version__ = '$Revision: 1.8 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -60,6 +60,11 @@ class RBAccount:
 		self.cmd('%s -Rp %s %s' % (rbconfig.command_cp, rbconfig.dir_skel, usr.homeDirectory))
 		self.wrapper(os.chmod, usr.homeDirectory, 0711)
 		self.wrapper(os.symlink, webtree, '%s/public_html' % usr.homeDirectory)
+		#symlink vuln fix
+		try:
+			self.wrapper(os.chown, usr.homeDirectory+'/public_html', usr.uidNumber, usr.gidNumber)
+		except OSError:
+			pass
 
 		# Add a .forward file in their home directory to point to their
 		# alternate email address, but only if they're a dcu person and
@@ -306,14 +311,14 @@ class RBAccount:
 	def list_add(self, list, email):
 		"""Add email address to mailing list."""
 
-		fd = self.my_popen('%s/bin/add_members -r - %s' % (rbconfig.dir_mailman, self.shquote(list)))
+		fd = self.my_popen("su -c '%s/bin/add_members -r - %s' list" % (rbconfig.dir_mailman, self.shquote(list)))
 		fd.write('%s\n' % email)
 		self.my_close(fd)
 	
 	def list_delete(self, list, email):
 		"""Delete email address from a mailing list."""
 
-		self.runcmd('%s/bin/remove_members %s %s' % (rbconfig.dir_mailman, self.shquote(list), self.shquote(email)))
+		self.runcmd("su -c '%s/bin/remove_members %s %s' list" % (rbconfig.dir_mailman, self.shquote(list), self.shquote(email)))
 	
         #--------------------------------------------------------------------#
 	# INTERNAL METHODS                                                   #

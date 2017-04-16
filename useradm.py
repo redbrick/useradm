@@ -27,7 +27,7 @@ from rbuserdb import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.16 $'
+__version__ = '$Revision: 1.17 $'
 __author__  = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
@@ -1623,6 +1623,11 @@ Note: if you have left DCU, you need to apply for associate membership.
 You can pay in person, by lodging money into our account, electronic bank
 transfer, or even PayPal! All the details you need are here:
 
+!!NOTE!! 
+PayPal doesn't allow the addition of Payment notes, Please email
+accounts@redbrick.dcu.ie if you pay by PayPal
+!!NOTE!!
+
 http://www.redbrick.dcu.ie/help/joining/
 
 Our bank details are:
@@ -1643,7 +1648,7 @@ Please Note!
 	if usr.yearsPaid == 0:
 		fd.write(
 """
-If you do not renew by the 30th October 2016, your account will be disabled. 
+If you do not renew by the 30th November 2016, your account will be disabled. 
 Your account will remain on the system for a grace period of a year - you 
 just won't be able to login. So don't worry, it won't be deleted any time 
 soon! You can renew at any time during the year.

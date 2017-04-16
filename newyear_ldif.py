@@ -1,7 +1,5 @@
 #!/usr/bin/python
-
 import sys
-
 for i in sys.stdin:
 	i = i.rstrip()
 	if i.startswith("yearsPaid:"):

@@ -31,7 +31,7 @@ from rbuser import *
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.9 $'
+__version__ = '$Revision: 1.10 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -1381,11 +1381,11 @@ class RBUserDB:
 		# rest is the course name. Uppercase course & year for
 		# consistency.
 		#
-		if res[1].get('l'):
+		if res[1].get('physicalDeliveryOfficeName'):
 			if override or usr.course == None:
-				usr.course = res[1]['l'][0][:-1].upper()
+				usr.course = res[1]['physicalDeliveryOfficeName'][0][:-1].upper()
 			if override or usr.year == None:
-				usr.year = res[1]['l'][0][-1].upper()
+				usr.year = res[1]['physicalDeliveryOfficeName'][0][-1].upper()
 
 	def set_user_dcu_staff(self, usr, res, override = 0):
 		"""Populate RBUser object with staff information from DCU

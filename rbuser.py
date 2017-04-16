@@ -8,7 +8,7 @@
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
-__version__ = '$Revision: 1.3 $'
+__version__ = '$Revision: 1.4 $'
 __author__  = 'Cillian Sharkey'
 
 #-----------------------------------------------------------------------------#
@@ -71,6 +71,34 @@ class RBUser:
 	# Union of above lists.
 	#
 	attr_list_all = attr_list + attr_misc_list
+
+	attr_list_info = (
+		# Attributes associated with user to be used for the useradm info command
+
+		'uid',			# Username
+		'usertype',		# XXX NOT IN LDAP: contains primary
+					# usertype from objectClass list.
+					# Placed here so it's at start of
+					# output for user's information.
+		'newbie',		# New this year (boolean)
+		'cn',			# Full name
+		'altmail',		# Alternate email
+		'id',			# DCU ID number (integer)
+		'course',		# DCU course code
+		'year',			# DCU course year number/code
+		'yearsPaid',		# Number of years paid (integer)
+		'updatedby',		# Username
+		'updated',		# Timestamp
+		'createdby',		# Username
+		'created',		# Timestamp
+		'birthday',		# Date
+		
+		# Attributes associated with Unix account.
+		
+		'gecos',
+		'loginShell',
+		'homeDirectory',
+	)
 
 	# List of attributes that have multiple values (i.e. are lists).
 	#
