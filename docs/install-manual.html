@@ -1,0 +1,241 @@
+<html>
+<head>
+<title>Installation Manual: RedBrick Registration System</title>
+<link rel="stylesheet" href="doc.css" type="text/css">
+</head>
+<body>
+
+<h1>Installation Manual:<br>RedBrick Registration System</h1>
+
+<p><i>Cillian Sharkey, CASE3, 50716197</i></p>
+
+<ol>
+	<li><a href="#intro">Introduction</a>
+	<li><a href="#prereq">Pre-requisites</a>
+	<ol>
+		<li><a href="#req-all">Requirements for all setups</a>
+		<li><a href="#req-main">Requirements for main setup</a>
+		<li><a href="#req-web">Requirements for web setup</a>
+	</ol>
+	<li><a href="#install">Installation</a>
+	<ol>
+		<li><a href="#install-sw">Installing software</a>
+		<li><a href="#setup-db">Setting up database</a>
+	</ol>
+	<li><a href="#config">Configuration</a>
+	
+</ol>
+
+<a name=intro></a><h2>Introduction</h2>
+
+<p>There are essentially two kinds of setups for RRS:</p>
+
+<ul>
+	
+	<li>Main setup - this is the setup of the machine where the user
+	database and accounts permanently reside. There is at a minimum, full
+	use of <code>useradm</code> for both database and account
+	administration.
+	
+	<li>Web setup - this is the machine used for hosting the clubs &amp;
+	societies day system. Full use of the <code>rrs</code> cgi for database
+	administration and limited use of useradm for database only
+	administration.
+
+</ul>
+
+<p>Note that the web setup could also be used on the main setup, so that full use
+of <code>useradm</code> and the <code>rrs</code> cgi would be available.</p>
+
+<p>The installation requirements and steps below will indicate if they only
+pertain to one of the given setups ('main' or 'web') above, otherwise it can be
+assumed that they are required for both types of setup.</p>
+
+<p>It is also worth noting that much of RRS is very specific to the RedBrick
+and DCU environment and so as such is not designed for widespread use on
+generic machines. The web setup mentioned above however, is not as specific in
+its requirements and is intended to be reasonably 'portable'.</p>
+
+<a name=prereq></a><h2>Pre-requisites</h2>
+
+<a name=req-all></a><h3>Requirements for all setups</h3>
+
+<h4>Platform</h4>
+
+<p>RRS is designed primarily to run on a Unix platform however, it should be
+possible to run the web interface part on a non-Unix platform although this has
+not been tested. Note that root (superuser) access is required for performing
+any account or filesystem operations with <code>useradm</code>, everything else
+can be performed using a user / unprivileged account (assuming it has access to
+the user database).</p>
+
+<h4>PostgresSQL</h4>
+
+<p>PostgresSQL version 7.2 or higher must be installed. Details on doing this vary
+depending on the operating system and is outside the scope of this document
+however, full instructions can be found on the
+<a href="http://www.postgresql.org">PostgresSQL website</a>.</p>
+
+<h4>Python</h4>
+
+<p>Python version 2.2 or higher must be installed. Details on doing this vary
+depending on the operating system and is outside the scope of this document
+however, full instructions can be found on the
+<a href="http://www.python.org">Python website</a>.</p>
+
+<p>The following Python modules are included in the standard Python release,
+but may need to be installed or configured to work:</p>
+
+<ul>
+	<li>readline - provides command line editing and completion
+	functionality for useradm. Requires <a href="???">GNU readline</a> to
+	be installed.
+</ul>
+
+<p>The following additional 3rd party Python modules must be installed:</p>
+
+<ul>
+	
+	<li><a href="http://www.druid.net/pygresql/">PyGresSQL</a> - Python
+	interface to PostgresSQL database. Note that this is actually included
+	in the PostgresSQL database release, however ensure that version 3.2 or
+	later is installed.
+	
+	<li><a href="http://python-ldap.sourceforge.net/">Python-LDAP</a> - a
+	Python interface to LDAP. Requires
+	<a href="http://www.openldap.org">OpenLDAP</a> to be installed.
+	Tested with Python-LDAP version 1.10alpha3 and OpenLDAP 1.2.13. This
+	module is currently only used by
+	<a href=rebuild_userdb_students.html>rebuild_userdb_student</a> and the
+	<a href=rebuild_userdb_staff.html>rebuild_userdb_staff</a> scripts.
+
+</ul>
+
+<a name=req-main></a><h3>Requirements for main setup</h3>
+
+<h4>Account utilities</h4>
+
+<p>The account utilities <code>useradd</code>, <code>usermod</code> and
+<code>userdel</code> need to be installed. Typically, these are provided as
+part of the native operating system and have been found to have a consistent
+interface on Solaris, Linux and NetBSD.</p>
+
+<h4>Setquota</h4>
+
+<p>The 3rd party utility <code>setquota</code> must be installed for the
+manipulation of disk quotas. There appear to be a number of implementations of
+this command each with different command line syntax for different operating
+systems. Tested with a setquota utility for Solaris written by David Mitchell
+of Dept of Computer Science, Sheffield University.</p>
+
+<h4>Mailman</h4>
+
+<p>RRS automatically subscribes (and unsubscribes) users to a variety of
+RedBrick mailing lists, specifically the announce-redbrick,
+redbrick-newsletter, comittee, rb-admins and admin-discuss lists. For this
+reason the mailing list software <a href="http://www.list.org">Mailman</a>
+should be installed with the above mentioned lists created and working. It is
+not entirely necessary however as "dummy" scripts can be used in place of the
+<code>add_members</code> and <code>remove_members</code> mailman commands.</p>
+
+<h4>Mail Transfer Agent</h4>
+
+<p>Any MTA that provides the generic <code>sendmail</code> command line
+interface will suffice, e.g. Exim, Postfix, Sendmail, etc.</p>
+
+<a name=req-web></a><h3>Requirements for web setup</h3>
+
+<h4>Apache</h4>
+
+<p>A web server is required for the <code>rrs</code> cgi. Web servers other
+than Apache should work as the CGI standard is web server independant. Tested
+against Apache 1.3.26.</p>
+
+<a name=install></a><h2>Installation</h2>
+
+<a name=install-sw></a><h3>Installing software</h3>
+
+<p>The installation of RRS simply involves unpacking the
+<a href=rrs.tar.gz>RRS distribution tarball</a> in a filesystem location
+of your choosing. Say you have downloaded the tarball to
+<code>/tmp/rrs.tar.gz</code>. Installation to the directory
+<code>/usr/local/rrs</code> is as follows:</p>
+
+<pre># <b>cd /usr/local</b>
+# <b>tar zxf /tmp/rrs.tar.gz</b></pre>
+
+<a name=setup-db></a><h3>Setting up database</h3>
+
+<p>A database <code>userdb</code> needs to be created with the postgres command
+"<code>createdb userdb</code>" run as the postgres user. For the account setup,
+the root user will need access to the database. For the web setup, the user the
+web server runs as will need access to the database. This is achieved by first
+creating the users if they don't already exist with the postgres
+<code>createuser</code> command and making sure that postgres is setup to grant
+access to the <code>userdb</code> database for these users by appropriate
+editing of the <code>pg_hba.conf</code> and possibly <code>pg_ident.conf</code>
+files.</p>
+
+<h4>Creating database [main setup]</h4>
+
+<p>This step sets up a new database from scratch.</p>
+
+<p>Create the tables for the database:</p>
+
+<pre>main$ <b>cat userdb_reserved.sql userdb_staff.sql userdb_students.sql \
+userdb_usertypes.sql userdb_users.sql | psql userdb</b></pre>
+
+<p>Make sure that access to these tables is granted to all users who need it.
+The above scripts include full access for root and SELECT (read only) access
+for users <code>www</code> and <code>webgroup</code> as this is the default
+used on the RedBrick system.</p>
+
+<p>Then populate the student, staff and reserved tables by running each of the
+rebuild scripts, e.g:</p>
+
+<pre>main$ <b>./rebuild_userdb_reserved</b>
+userdb/reserved: Purge. Populate. Done [45]
+main$ <b>./rebuild_userdb_students</b>
+userdb/students: Search [19523]. Purge. Populate. Done [19436/19523].
+main$ <b>./rebuild_userdb_staff</b>
+userdb/staff: Search [1829]. Purge. Populate. Done [397/1829].</pre>
+
+<h4>Creating database [web setup]</h4>
+
+<p>If the web setup is on a seperate machine to the main system machine, the
+database must be copied across. This can be achieved as follows:</p>
+
+<pre>
+main$ <b>pg_dump -f userdb.dump userdb</b>
+<i>[copy file userdb.dump to the web machine]</i>
+web$ <b>psql userdb &lt; userdb.dump</b></pre>
+
+<p>You will need to grant full access to the users table to the user the web
+server runs as. The "<code>GRANT ALL ON users TO username</code>" SQL command
+achieves this when run as the owner of the userdb.</p>
+
+<p>An empty <code>rrs.log</code> file needs to be created before any actions
+can be performed with the web interface. This can be achieved by:</p>
+
+<pre><i>[create rrs.log in directory that rrs is installed]</i>
+web$ <b>touch rrs.log</b>
+<i>[make sure web server user can write to file]</i>
+web$ <b>chown www rrs.log</b></pre>
+
+<a name=config></a><h2>Configuration</h2>
+
+<p>Local configuration can be performed by editing the
+<a href=rbconfig.html>rbconfig.py</a> file. The majority of this configuration
+file is for providing local account and filesystem location paths to the
+<a href=rbaccount.html>rbaccount</a> module. The defaults provided are of
+course suited for the RedBrick system.</p>
+
+<p>At this point, all necessary installation and configuration should be
+complete for use of RRS.</p>
+
+<hr>
+
+$Id: install-manual.html,v 1.1 2003/03/28 16:33:07 cns Exp $
+
+</body>
+</html>

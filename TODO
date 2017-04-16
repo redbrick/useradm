@@ -1,0 +1,88 @@
+$Id: TODO,v 1.4 2004/03/07 21:11:38 cns Exp $
+
+=======
+useradm
+=======
+
+- rebuild_reserved, renew, checkdb, add/modify/delete reserved entries
+
+- have efficient batch mode that skips unneeded "user exists" checks
+
+===========
+OTHER STUFF
+===========
+
+- add previous year (ou=2003,ou=accounts?) tree
+  automate this!
+
+===========
+python_ldap
+===========
+
+- LDAP types -> python types: currently everything returned as strings, need:
+  newbie: boolean
+  yearsPaid, id, uidNumber, gidNumber: int
+  DONE: "converted" on the fly
+
+====
+LDAP
+====
+
+- password crypt: has to be DES until Solaris supports better methods
+  crypted password gets sent by pam to ldap when checking authentication
+  anyone can directly connect to ldap to try for correct passwords with
+  no delay involved for incorrect passwords. this should be logged..
+
+- add 'ldap' as a reserved type, any other ldap 'keywords' ?
+  DONE: ldap is a group
+
+- reserved & system usertypes (i.e. objectClass) no longer used in accounts
+  tree ?
+  DONE: webgroup was system, converted to redbrick
+
+- reserved description should be compulsory
+  DONE
+
+- birthday: lose the time, not needed
+  created & updated: drop the splitsecond precision, make sure timezone is set
+  in all values, i.e. +00 or +01
+  DONE
+
+- home directories not consistent! to be part of checkdb
+  
+  also, vhosts should be in /webtree/vhosts ?
+  DONE?
+
+for dn,attr in ldp.search_s('ou=accounts,o=redbrick',ldap.SCOPE_ONELEVEL, 'objectClass=posixaccount', ('uid','homeDirectory', 'objectClass')):
+ if attr['homeDirectory'][0] != acc.gen_homedir(attr['uid'][0], attr['objectClass'][0]):
+  print attr['uid'][0]
+
+======
+Python
+======
+
+- python % format printing of values as a boolean e.g.
+  print '%b %b' % (1,0) -> "true false"
+  DONE: this is in 2.3
+
+- ability to toggle readline file completion
+
+=======
+General
+=======
+
+- mailman: possible to rename user on a list ? i.e. to preserve subscription
+  information
+
+- remove all rename/convert symlinks and stop using them
+  DONE
+
+- does quorum include cmte
+  YES, DAMMIT
+
+- Club/Socs/Projects to be subject to years_paid (but don't actually pay).
+  Helps keep track of them. Or don't bother with payment info, have custom
+  command to mail & disable these accounts at start of every year?
+
+- make rrs work on all browsers
+

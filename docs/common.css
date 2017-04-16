@@ -1,0 +1,91 @@
+/*
+ * Style sheet for RRS.
+ *
+ * $Id: common.css,v 1.1 2003/03/26 10:24:19 cns Exp $
+ */
+
+body {
+	color: black;
+	background-color: white;
+	padding: 0px;
+	margin: 0px;
+}
+#okay {
+	color: green;
+}
+#warn {
+	color: red;
+}
+#notice {
+	color: blue;
+}
+#note {
+	font-size: 0.8em;
+	color: blue;
+}
+pre {
+	text-align: left;
+	font-family: 'Courier New', monospace;
+	font-size: 0.8em;
+	background-color: #F0F0F0;
+	border: 1px solid #505050;
+	padding: 5px;
+}
+input.fixed {
+	font-family: 'Courier New', monospace;
+}
+table.main {
+	border: 1px dashed gray;
+}
+table.search {
+	border: none;
+}
+table.search td.top {
+	background-color: #FBFBDD;
+	font-weight: bold;
+	border: 1px solid gray;
+}
+table.search td.button {
+	border: none;
+}
+table.search td {
+	text-align: left;
+	border: 1px solid gray;
+}
+td.side {
+	background-color: #FBFBDD;
+	font-weight: bold;
+	text-align: right;
+	border: 1px solid gray;
+}
+input, td {
+	font-size: 0.9em;
+}
+#button {
+	font-size: 0.8em;
+	border: 1px solid #999;
+}
+#top {
+	background-color: #CC0000;
+	color: white;
+	border-top: 1px solid black;
+	border-bottom: 1px solid black;
+	text-align: center;
+	vertical-align: center;
+	font-size: 1em;
+	font-weight: bold;
+	padding: 0.3em;
+	width: 100%;
+}
+#menu {
+	text-align: center;
+	vertical-align: center;
+}
+#msgs {
+	background-color: #F0F0F0;
+	border: 2px dotted #505050;
+}
+#main {
+	text-align: center;
+	padding: 5px;
+}

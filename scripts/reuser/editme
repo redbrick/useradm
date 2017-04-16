@@ -1,0 +1,4 @@
+dn: uid=shivo,ou=accounts,o=redbrick
+changetype: modify
+replace: loginShell
+loginShell: /usr/local/shells/zsh

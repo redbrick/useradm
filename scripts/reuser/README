@@ -1,0 +1,3 @@
+Change the username to users name and run the following
+
+ldapmodify -x -D cn=root,ou=ldap,o=redbrick -y /etc/ldap.secret -f editme
