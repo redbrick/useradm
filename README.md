@@ -116,40 +116,44 @@ Pre-requisites
 
    A web server is required for the rrs cgi. Web servers other than Apache should work as the CGI standard is web server independant. Tested against Apache 1.3.26.
 
-Installation
+### Installation
+#### Installing software
 
-  Installing software
+The installation of RRS simply involves unpacking the RRS distribution tarball in a filesystem location of your choosing. Say you have downloaded the tarball to `/tmp/rrs.tar.gz`. Installation to the directory `/usr/local/rrs` is as follows:
+```
+cd /usr/local
+tar zxf /tmp/rrs.tar.gz
+```
 
-   The installation of RRS simply involves unpacking the RRS distribution tarball in a filesystem location of your choosing. Say you have downloaded the tarball to
-   /tmp/rrs.tar.gz. Installation to the directory /usr/local/rrs is as follows:
-# cd /usr/local
-# tar zxf /tmp/rrs.tar.gz
+#### Setting up database
 
-  Setting up database
+  A database userdb needs to be created with the postgres command "createdb userdb" run as the postgres user. For the account setup, the root user will need access to the
+  database. For the web setup, the user the web server runs as will need access to the database. This is achieved by first creating the users if they don't already exist with the
+  postgres createuser command and making sure that postgres is setup to grant access to the userdb database for these users by appropriate editing of the pg_hba.conf and possibly
+  pg_ident.conf files.
 
-   A database userdb needs to be created with the postgres command "createdb userdb" run as the postgres user. For the account setup, the root user will need access to the
-   database. For the web setup, the user the web server runs as will need access to the database. This is achieved by first creating the users if they don't already exist with the
-   postgres createuser command and making sure that postgres is setup to grant access to the userdb database for these users by appropriate editing of the pg_hba.conf and possibly
-   pg_ident.conf files.
+  Creating database [main setup]
 
-    Creating database [main setup]
+  This step sets up a new database from scratch.
 
-   This step sets up a new database from scratch.
+  Create the tables for the database:
+  ```
+  main$ cat userdb_reserved.sql userdb_staff.sql userdb_students.sql \
+  userdb_usertypes.sql userdb_users.sql | psql userdb
+  ```
 
-   Create the tables for the database:
-main$ cat userdb_reserved.sql userdb_staff.sql userdb_students.sql \
-userdb_usertypes.sql userdb_users.sql | psql userdb
+  Make sure that access to these tables is granted to all users who need it. The above scripts include full access for root and SELECT (read only) access for users www and
+  webgroup as this is the default used on the RedBrick system.
 
-   Make sure that access to these tables is granted to all users who need it. The above scripts include full access for root and SELECT (read only) access for users www and
-   webgroup as this is the default used on the RedBrick system.
-
-   Then populate the student, staff and reserved tables by running each of the rebuild scripts, e.g:
-main$ ./rebuild_userdb_reserved
-userdb/reserved: Purge. Populate. Done [45]
-main$ ./rebuild_userdb_students
-userdb/students: Search [19523]. Purge. Populate. Done [19436/19523].
-main$ ./rebuild_userdb_staff
-userdb/staff: Search [1829]. Purge. Populate. Done [397/1829].
+  Then populate the student, staff and reserved tables by running each of the rebuild scripts, e.g:
+  ```
+  main$ ./rebuild_userdb_reserved
+  userdb/reserved: Purge. Populate. Done [45]
+  main$ ./rebuild_userdb_students
+  userdb/students: Search [19523]. Purge. Populate. Done [19436/19523].
+  main$ ./rebuild_userdb_staff
+  userdb/staff: Search [1829]. Purge. Populate. Done [397/1829].
+  ```
 
     Creating database [web setup]
 
