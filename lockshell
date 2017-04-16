@@ -1,0 +1,9 @@
+#!/bin/bash
+
+usernames=$(ls /home/club)
+
+for username in $usernames
+do
+	/srv/admin/scripts/rrs/useradm setshell -o $username /usr/local/shells/nologin
+	sleep 4
+done
