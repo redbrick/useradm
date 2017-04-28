@@ -9,65 +9,66 @@
 
 import atexit
 import getopt
-import getpass
-import grp
 import os
 import pprint
-import pwd
 import re
 import readline
 import sys
 
 # RedBrick modules
 
-from rbaccount import *
-from rbuserdb import *
+from rbaccount import RBAccount
+from rbuser import RBUser
+from rbuserdb import RBUserDB
+from rbopt import RBOpt
+from rberror import RBError
 
 #-----------------------------------------------------------------------------#
 # DATA                                                                        #
 #-----------------------------------------------------------------------------#
 
 __version__ = '$Revision: 1.17 $'
-__author__  = 'Cillian Sharkey'
+__author__ = 'Cillian Sharkey'
 
 # Command name -> (command description, optional arguments)
 #
 cmds = {
-        'add':                  ('Add new user', '[username]'),
-        'renew':                ('Renew user', '[username]'),
-        'update':               ('Update user', '[username]'),
-        'altmail':              ('Change Alternate Email', '[username]'),
-        'activate':             ('Re-Enable a club/soc account', '[username]'),
-        'delete':               ('Delete user', '[username]'),
-        'resetpw':              ('Set new random password and mail it to user', '[username]'),
-        'setshell':             ('Set user\'s shell', '[username [shell]]'),
-        'resetsh':              ('Reset user\'s shell', '[username]'),
-        'rename':               ('Rename user', '[username]'),
-        'convert':              ('Change user to a different usertype', '[username]'),
-        'disuser':              ('Disuser a user', '[username [new username]]'),
-        'reuser':               ('Re-user a user', '[username]'),
-        'show':                 ('Show user details', '[username]'),
-        'info':                 ('Show shorter user details', '[username]'),
-        'freename':             ('Check if a username is free', '[username]'),
-        'search':               ('Search user and dcu databases', '[username]'),
-        'pre_sync':             ('Dump LDAP tree for use by sync before new tree is loaded', ''),
-        'sync':                 ('Synchronise accounts with userdb (for RRS)', '[rrs-logfile [presync-file]]'),
-        'sync_dcu_info':        ('Interactive update of userdb using dcu database info', ''),
-        'list_users':           ('List all usernames', ''),
-        'list_unavailable':     ('List all usernames that are unavailable', ''),
-        'list_newbies':         ('List all paid newbies', ''),
-        'list_renewals':        ('List all paid renewals (non-newbie)', ''),
-        'list_unpaid':          ('List all non-renewed users', ''),
-        'list_unpaid_normal':   ('List all normal non-renewed users', ''),
-        'list_unpaid_reset':    ('List all normal non-renewed users with reset shells', ''),
-        'list_unpaid_grace':    ('List all grace non-renewed users', ''),
-        'newyear':              ('Prepare database for start of new academic year', ''),
-        'unpaid_warn':          ('Warn (mail) all non-renewed users', ''),
-        'unpaid_disable':       ('Disable all normal non-renewed users', ''),
-        'unpaid_delete':        ('Delete all grace non-renewed users', ''),
-        'checkdb':              ('Check database for inconsistencies', ''),
-        'stats':                ('Show database and account statistics', ''),
-        'create_uidNumber':     ('Create uidNumber text file with next free uidNumber', ''),
+    'add':                  ('Add new user', '[username]'),
+    'renew':                ('Renew user', '[username]'),
+    'update':               ('Update user', '[username]'),
+    'altmail':              ('Change Alternate Email', '[username]'),
+    'activate':             ('Re-Enable a club/soc account', '[username]'),
+    'delete':               ('Delete user', '[username]'),
+    'resetpw':              ('Set new random password and mail it to user', '[username]'),
+    'setshell':             ('Set user\'s shell', '[username [shell]]'),
+    'resetsh':              ('Reset user\'s shell', '[username]'),
+    'rename':               ('Rename user', '[username]'),
+    'convert':              ('Change user to a different usertype', '[username]'),
+    'disuser':              ('Disuser a user', '[username [new username]]'),
+    'reuser':               ('Re-user a user', '[username]'),
+    'show':                 ('Show user details', '[username]'),
+    'info':                 ('Show shorter user details', '[username]'),
+    'freename':             ('Check if a username is free', '[username]'),
+    'search':               ('Search user and dcu databases', '[username]'),
+    'pre_sync':             ('Dump LDAP tree for use by sync before new tree is loaded', ''),
+    'sync':                 ('Synchronise accounts with userdb (for RRS)',
+                             '[rrs-logfile [presync-file]]'),
+    'sync_dcu_info':        ('Interactive update of userdb using dcu database info', ''),
+    'list_users':           ('List all usernames', ''),
+    'list_unavailable':     ('List all usernames that are unavailable', ''),
+    'list_newbies':         ('List all paid newbies', ''),
+    'list_renewals':        ('List all paid renewals (non-newbie)', ''),
+    'list_unpaid':          ('List all non-renewed users', ''),
+    'list_unpaid_normal':   ('List all normal non-renewed users', ''),
+    'list_unpaid_reset':    ('List all normal non-renewed users with reset shells', ''),
+    'list_unpaid_grace':    ('List all grace non-renewed users', ''),
+    'newyear':              ('Prepare database for start of new academic year', ''),
+    'unpaid_warn':          ('Warn (mail) all non-renewed users', ''),
+    'unpaid_disable':       ('Disable all normal non-renewed users', ''),
+    'unpaid_delete':        ('Delete all grace non-renewed users', ''),
+    'checkdb':              ('Check database for inconsistencies', ''),
+    'stats':                ('Show database and account statistics', ''),
+    'create_uidNumber':     ('Create uidNumber text file with next free uidNumber', ''),
 }
 
 # Command groups
@@ -77,19 +78,20 @@ cmds_single_account = ('resetpw', 'resetsh', 'disuser', 'reuser', 'setshell')
 cmds_single_user_info = ('show', 'info', 'freename')
 cmds_interactive_batch = ('search', 'sync', 'sync_dcu_info')
 cmds_batch = ('newyear', 'unpaid_warn', 'unpaid_disable', 'unpaid_delete')
-cmds_batch_info = ('pre_sync', 'list_users', 'list_unavailable', 'list_newbies', 'list_renewals', 'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
+cmds_batch_info = ('pre_sync', 'list_users', 'list_unavailable', 'list_newbies', 'list_renewals',
+                   'list_unpaid', 'list_unpaid_normal', 'list_unpaid_reset', 'list_unpaid_grace')
 cmds_misc = ('checkdb', 'stats', 'create_uidNumber')
 
 # Command group descriptions
 #
 cmds_group_desc = (
-        (cmds_single_user,      'Single user commands'),
-        (cmds_single_account,   'Single account commands'),
-        (cmds_single_user_info, 'Single user information commands'),
-        (cmds_interactive_batch,'Interactive batch commands'),
-        (cmds_batch,            'Batch commands'),
-        (cmds_batch_info,       'Batch information commands'),
-        (cmds_misc,             'Miscellaneous commands')
+    (cmds_single_user, 'Single user commands'),
+    (cmds_single_account, 'Single account commands'),
+    (cmds_single_user_info, 'Single user information commands'),
+    (cmds_interactive_batch, 'Interactive batch commands'),
+    (cmds_batch, 'Batch commands'),
+    (cmds_batch_info, 'Batch information commands'),
+    (cmds_misc, 'Miscellaneous commands')
 )
 
 # All commands
@@ -99,27 +101,29 @@ cmds_all = list(cmds.keys())
 # Command option -> (optional argument, option description, commands that use option)
 #
 cmds_opts = (
-        ('h', '', 'Display this usage', cmds_all),
-        ('T', '', 'Test mode, show what would be done', cmds_all),
-        ('d', '', 'Perform database operations only', cmds_single_user),
-        ('a', '', 'Perform unix account operations only', cmds_single_user),
-        ('u', 'username', 'Unix username of who updated this user', cmds_single_user + ('disuser', 'reuser')),
-        ('f', '', 'Set newbie (fresher) to true', ('add', 'update')),
-        ('F', '', 'Opposite of -f', ('add', 'update')),
-        ('m', '', 'Send account details to user\'s alternate email address', ('add', 'renew', 'rename', 'resetpw')),
-        ('M', '', 'Opposite of -m', ('add', 'renew', 'rename', 'resetpw')),
-        ('o', '', 'Override warning errors', cmds_all),
-        ('p', '', 'Set new random password', ('add', 'renew')),
-        ('P', '', 'Opposite of -p', ('add', 'renew')),
-        ('t', 'usertype', 'Type of account', ('add', 'renew', 'update', 'convert')),
-        ('n', 'name', 'Real name or account description', ('add', 'renew', 'update', 'search')),
-        ('e', 'email', 'Alternative email address', ('add', 'renew', 'update')),
-        ('i', 'id', 'Student/Staff ID', ('add', 'renew', 'update', 'search')),
-        ('c', 'course', 'DCU course (abbreviation)', ('add', 'renew', 'update')),
-        ('y', 'year', 'DCU year', ('add', 'renew', 'update')),
-        ('s', 'years', 'paid Number of years paid (subscription)', ('add', 'renew', 'update')),
-        ('b', 'birthday', 'Birthday (format YYYY-MM-DD)', ('add', 'renew', 'update')),
-        ('q', '', 'Quiet mode', ('reuser',))
+    ('h', '', 'Display this usage', cmds_all),
+    ('T', '', 'Test mode, show what would be done', cmds_all),
+    ('d', '', 'Perform database operations only', cmds_single_user),
+    ('a', '', 'Perform unix account operations only', cmds_single_user),
+    ('u', 'username', 'Unix username of who updated this user',
+     cmds_single_user + ('disuser', 'reuser')),
+    ('f', '', 'Set newbie (fresher) to true', ('add', 'update')),
+    ('F', '', 'Opposite of -f', ('add', 'update')),
+    ('m', '', 'Send account details to user\'s alternate email address',
+     ('add', 'renew', 'rename', 'resetpw')),
+    ('M', '', 'Opposite of -m', ('add', 'renew', 'rename', 'resetpw')),
+    ('o', '', 'Override warning errors', cmds_all),
+    ('p', '', 'Set new random password', ('add', 'renew')),
+    ('P', '', 'Opposite of -p', ('add', 'renew')),
+    ('t', 'usertype', 'Type of account', ('add', 'renew', 'update', 'convert')),
+    ('n', 'name', 'Real name or account description', ('add', 'renew', 'update', 'search')),
+    ('e', 'email', 'Alternative email address', ('add', 'renew', 'update')),
+    ('i', 'id', 'Student/Staff ID', ('add', 'renew', 'update', 'search')),
+    ('c', 'course', 'DCU course (abbreviation)', ('add', 'renew', 'update')),
+    ('y', 'year', 'DCU year', ('add', 'renew', 'update')),
+    ('s', 'years', 'paid Number of years paid (subscription)', ('add', 'renew', 'update')),
+    ('b', 'birthday', 'Birthday (format YYYY-MM-DD)', ('add', 'renew', 'update')),
+    ('q', '', 'Quiet mode', ('reuser',))
 )
 
 input_instructions = '\033[1mRETURN\033[0m: use [default] given  \033[1mTAB\033[0m: answer completion  \033[1mEOF\033[0m: give empty answer\n'
@@ -144,8 +148,8 @@ def main():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'b:c:e:i:n:s:t:u:y:adfFhmMopPqT')
-    except getopt.GetoptError as e:
-        print(e)
+    except getopt.GetoptError as err:
+        print(err)
         usage()
         sys.exit(1)
 
@@ -206,8 +210,8 @@ def main():
 
     try:
         udb.connect()
-    except ldap.LDAPError as e:
-        error(e, 'Could not connect to user database')
+    except ldap.LDAPError as err:
+        error(err, 'Could not connect to user database')
         # not reached
     except KeyboardInterrupt:
         print()
@@ -226,11 +230,11 @@ def main():
         print()
         sys.exit(1)
         # not reached
-    except RBError as e:
-        rberror(e)
+    except RBError as err:
+        rberror(err)
         # not reached
-    except ldap.LDAPError as e:
-        error(e)
+    except ldap.LDAPError as err:
+        error(err)
         # not reached
 
     sys.exit(0)
@@ -378,14 +382,14 @@ def renew():
 
     try:
         udb.get_userinfo_renew(usr, curusr, override=1)
-    except RBError as e:
-        if rberror(e, opt.uid == None):
+    except RBError as err:
+        if rberror(err, opt.uid is None):
             return
 
     try:
         udb.check_unpaid(curusr)
-    except RBError as e:
-        if rberror(e, opt.uid == None):
+    except RBError as err:
+        if rberror(err, opt.uid is None):
             return
 
     udb.get_userdefaults_renew(usr)
@@ -396,8 +400,8 @@ def renew():
         print('NOTICE: A new usertype was determined by DCU database!')
         print()
     edit_details = yesno(
-            'New details of user to be renewed are shown above with any differences\n' \
-            'from current values. Edit user details?', 0)
+        'New details of user to be renewed are shown above with any differences\n' \
+        'from current values. Edit user details?', 0)
 
     if edit_details:
         while 1:
@@ -408,8 +412,8 @@ def renew():
                 #
                 udb.get_userinfo_renew(usr, override = 1)
                 # XXX: check id not already in use
-            except RBError as e:
-                if not rberror(e, opt.id == None):
+            except RBError as err:
+                if not rberror(err, opt.id is None):
                     break
             else:
                 break

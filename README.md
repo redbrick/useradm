@@ -3,6 +3,13 @@
 
 Useradm is used to manage Redbrick's membership.
 
+## Testing RRS
+To test rrs run
+```
+python server.py
+```
+Then open [localhost:8000/rrs.cgi](http://localhost:8000/rrs.cgi)
+
 ## Functions
 ### New User Creation
 

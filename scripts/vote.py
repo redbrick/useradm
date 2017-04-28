@@ -34,16 +34,16 @@ def main():
 		usr = RBUser()
 		tmp = None
 		while not tmp:
-			tmp = raw_input("Please enter Username/Student ID/Student Card: ")
+			tmp = input("Please enter Username/Student ID/Student Card: ")
 		res = re.search(r'\D*\d{2}(\d{8})\d{3}\D*', tmp)
 		if res:
 			usr.id = int(res.group(1))
-			print 'CARD', usr.id
+			print('CARD', usr.id)
 		else:
 			res = re.search(r'^(\d{8})$', tmp)
 			if res:
 				usr.id = int(tmp)
-				print 'ID', usr.id
+				print('ID', usr.id)
 		try:
 			if usr.id:
 				udb.get_user_byid(usr)
@@ -54,21 +54,21 @@ def main():
 				udb.show(usr)
 		except RBError:
 
-			print '[31;1mNO SUCH USER YOU FUCKING DICKHEAD[0m'
+			print('[31;1mNO SUCH USER YOU FUCKING DICKHEAD[0m')
 		else:
-			if voted.has_key(usr.uid):
-				print '\n[31;1mGO FUCK YOUSELF YOU TWO-VOTING PRICK[0m\n'
+			if usr.uid in voted:
+				print('\n[31;1mGO FUCK YOUSELF YOU TWO-VOTING PRICK[0m\n')
 				continue
 
 			if usr.usertype not in ('member', 'committe', 'staff'):
-				print '\n[31;1mTELL THE COCKMUCH TO GET A REAL MEMBER ACCOUNT[0m\n'
+				print('\n[31;1mTELL THE COCKMUCH TO GET A REAL MEMBER ACCOUNT[0m\n')
 			elif usr.yearsPaid <= 0:
-				print '\n[31;1mTELL THE SCABBY BASTARD TO PISS OFF[0m\n'
+				print('\n[31;1mTELL THE SCABBY BASTARD TO PISS OFF[0m\n')
 			else:
 				fd.write('%s\n' % usr.uid)
 				fd.flush()
 				voted[usr.uid] = 1
-				print '\n[32;1mBIG VOTE GO NOW![0m\n'
+				print('\n[32;1mBIG VOTE GO NOW![0m\n')
 
 	fd.close()
 	sys.exit(0)

@@ -20,7 +20,7 @@ class RBError(Exception):
 
     def __init__(self, mesg):
         """Create new RBError object with given error message."""
-
+        super(RBError, self).__init__(mesg)
         self.mesg = mesg
 
     def __str__(self):

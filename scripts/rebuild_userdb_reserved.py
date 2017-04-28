@@ -40,9 +40,9 @@ ldap_users = {}
 def add_entry(name, desc):
 	"""Aggregate descriptions for multiple entries."""
 
-	if ldap_users.has_key(name):
+	if name in ldap_users:
 		return
-	if entries.has_key(name):
+	if name in entries:
 		entries[name] += ', ' + desc
 	else:
 		entries[name] = desc
@@ -62,11 +62,11 @@ def main():
 	
 	udb.setopt(opt)
 
-	print 'userdb/reserved:',
+	print('userdb/reserved:', end=' ')
 
 	# Gather new entries.
 	#
-	print 'Gather',
+	print('Gather', end=' ')
 
 	# Get copy of all LDAP user, group and reserved entries in one go to
 	# speedup queries later on.
@@ -102,7 +102,7 @@ def main():
 			res = re_dns.search(line)
 			if res:
 				name = res.group(2).lower()
-				if dns_entries.has_key(name):
+				if name in dns_entries:
 					continue
 				dns_entries[name] = 1
 				add_entry(name, 'DNS entry')
@@ -120,7 +120,7 @@ def main():
 			if not res:
 				continue
 			for name in res.group(1).split():
-				if name and '.' not in name and len(name) <= rbconfig.maxlen_uname and not dns_entries.has_key(name):
+				if name and '.' not in name and len(name) <= rbconfig.maxlen_uname and name not in dns_entries:
 					dns_entries[name] = 1
 					add_entry(name, '%s Host entry' % host)
 
@@ -130,51 +130,51 @@ def main():
 		fd = open(file)
 		for line in fd.readlines():
 			grp = line.split(':')[0].lower()
-			if len(grp) <= rbconfig.maxlen_uname and not ldap_groups.has_key(grp):
+			if len(grp) <= rbconfig.maxlen_uname and grp not in ldap_groups:
 				add_entry(grp, '%s Unix group' % host)
 
-	print '[%d].' % len(entries.keys()),
+	print('[%d].' % len(list(entries.keys())), end=' ')
 
 	# Delete any dynamic entries in LDAP reserved tree that are not in the
 	# list we built i.e. unused.
 	#
-	print 'Purge',
+	print('Purge', end=' ')
 
 	purge_dn = []
 	res = udb.list_reserved_dynamic()
 	for uid in res:
-		if not entries.has_key(uid):
+		if uid not in entries:
 			purge_dn.append('uid=%s,%s' % (uid, rbconfig.ldap_reserved_tree))
 
 	for i in purge_dn:
 		if not opt.test:
 			udb.ldap.delete_s(i)
 		else:
-			print 'delete', i
-	print '[%d]' % len(purge_dn),
+			print('delete', i)
+	print('[%d]' % len(purge_dn), end=' ')
 
 	# Now add/update entries.
 	#
-	print 'Populate.',
+	print('Populate.', end=' ')
 
 	total_mods = total_adds = 0
 
-	for k, v in entries.items():
-		if ldap_reserveds.has_key(k):
-			if not ldap_reserveds_static.has_key(k) and v != ldap_reserveds[k]:
+	for k, v in list(entries.items()):
+		if k in ldap_reserveds:
+			if k not in ldap_reserveds_static and v != ldap_reserveds[k]:
 				if not opt.test:
 					udb.ldap.modify_s('uid=%s,%s' % (k, rbconfig.ldap_reserved_tree), ((ldap.MOD_REPLACE, 'description', v),))
 				else:
-					print 'modify %-8s [%s] [%s]' % (k, v, ldap_reserveds[k])
+					print('modify %-8s [%s] [%s]' % (k, v, ldap_reserveds[k]))
 				total_mods += 1
 		else:
 			if not opt.test:
 				udb.ldap.add_s('uid=%s,%s' % (k, rbconfig.ldap_reserved_tree), (('uid', k), ('description', v), ('objectClass', ('reserved', 'top'))))
 			else:
-				print 'add %-8s [%s]' % (k, v)
+				print('add %-8s [%s]' % (k, v))
 			total_adds += 1
 
-	print 'Done [%d adds, %d mods]' % (total_adds, total_mods)
+	print('Done [%d adds, %d mods]' % (total_adds, total_mods))
 
 	udb.close()
 
