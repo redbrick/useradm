@@ -8,8 +8,6 @@ jobs:
       - checkout
       - run: apt-get update && apt-get install libldap2-dev libsasl2-dev -y
       - run: pip install -r requirements.txt
-      - run: pip install pylint
-      - run: pylint useradm/*
       - store_artifacts:
           path: test-reports/coverage
           destination: reports
