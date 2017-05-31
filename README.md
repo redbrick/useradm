@@ -1,4 +1,8 @@
 # Useradm
+
+[![CircleCI](https://circleci.com/gh/redbrick/useradm.svg?style=shield)](https://circleci.com/gh/redbrick/useradm)
+[![Code Climate](https://codeclimate.com/github/redbrick/useradm/badges/gpa.svg)](https://codeclimate.com/github/redbrick/useradm)
+
 ### Modular Python User Management Tool
 
 Useradm is used to manage Redbrick's membership.
