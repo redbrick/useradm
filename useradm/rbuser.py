@@ -15,6 +15,7 @@ __author__ = 'Cillian Sharkey'
 # CLASSES                                                                     #
 #-----------------------------------------------------------------------------#
 
+
 class RBUser:
     """Class to represent a user."""
 
@@ -25,7 +26,7 @@ class RBUser:
         # Attributes associated with user.
 
         'uid',                  # Username
-        'usertype',             # XXX NOT IN LDAP: contains primary
+        'usertype',             # fixme NOT IN LDAP: contains primary
                                 # usertype from objectClass list.
                                 # Placed here so it's at start of
                                 # output for user's information.
@@ -64,7 +65,7 @@ class RBUser:
         'bmonth',               # Birthday month
         'byear',                # Birthday year
         'disuser_period',       # at(1) timespec
-        #XXX remove usr.override
+        # fixme remove usr.override
         #'override'             # Boolean
     )
 
@@ -76,7 +77,7 @@ class RBUser:
         # Attributes associated with user to be used for the useradm info command
 
         'uid',                  # Username
-        'usertype',             # XXX NOT IN LDAP: contains primary
+        'usertype',             # fixme NOT IN LDAP: contains primary
                                 # usertype from objectClass list.
                                 # Placed here so it's at start of
                                 # output for user's information.
@@ -126,10 +127,10 @@ class RBUser:
             if i in attrs:
                 setattr(self, i, attrs[i])
             elif not hasattr(self, i):
-                # XXX set list attributes to empty list [] or None ??
-                #if i in self.attr_list_value:
+                # fixme set list attributes to empty list [] or None ??
+                # if i in self.attr_list_value:
                 #       setattr(self, i, [])
-                #else:
+                # else:
                 setattr(self, i, None)
 
     def merge(self, usr, override=0):
@@ -142,5 +143,5 @@ class RBUser:
 
         for i in self.attr_list_all:
             if (hasattr(usr, i) and (getattr(self, i) is None or override) and
-                    getattr(usr, i) != None):
+                    getattr(usr, i) is not None):
                 setattr(self, i, getattr(usr, i))

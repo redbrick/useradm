@@ -27,6 +27,7 @@ __author__ = 'Cillian Sharkey'
 # CLASSES                                                                     #
 #-----------------------------------------------------------------------------#
 
+
 class RBAccount:
     """Class to interface with Unix accounts."""
 
@@ -55,7 +56,7 @@ class RBAccount:
         self.cmd('%s -Rp %s %s' % (rbconfig.command_cp, rbconfig.dir_skel, usr.homeDirectory))
         self.wrapper(os.chmod, usr.homeDirectory, 0o711)
         self.wrapper(os.symlink, webtree, os.path.join(usr.homeDirectory, 'public_html'))
-        #symlink vuln fix
+        # symlink vuln fix
         try:
             self.wrapper(os.chown, os.path.join(usr.homeDirectory, 'public_html'),
                          usr.uidNumber, usr.gidNumber)
@@ -128,7 +129,7 @@ class RBAccount:
 
         """
 
-        # XXX Should check this before we rename user in ldap, have a
+        # fixme Should check this before we rename user in ldap, have a
         # rbaccount.check_userfree? There should never be a file or
         # directory in /home or /webtree that doesn't belong to an
         # existing user.
@@ -181,7 +182,7 @@ class RBAccount:
             except OSError as err:
                 raise RBFatalError("Could not rename '%s' to '%s' [%s]" % (oldf, newf, err))
 
-        # XXX
+        # fixme
         # Rename their subscription to announce lists in case an email
         # alias isn't put in for them or is later removed.
         #
@@ -198,14 +199,14 @@ class RBAccount:
 
         # Do supplementary group shit in rbuserdb.
         #
-        #if rbconfig.convert_primary_groups.has_key(usertype):
+        # if rbconfig.convert_primary_groups.has_key(usertype):
         #       group = rbconfig.convert_primary_groups[usertype]
-        #else:
+        # else:
         #       group = usertype
 
-        #if rbconfig.convert_extra_groups.has_key(usertype):
+        # if rbconfig.convert_extra_groups.has_key(usertype):
         #       groups = '-G ' + rbconfig.convert_extra_groups[usertype]
-        #else:
+        # else:
         #       groups = ''
 
         if newusr.usertype == 'committe' and oldusr.usertype not in ('member', 'staff', 'committe'):
@@ -225,7 +226,7 @@ class RBAccount:
         #
         try:
             self.wrapper(os.rename, oldusr.homeDirectory, newusr.homeDirectory)
-        except:
+        except BaseException:
             raise RBFatalError("Could not rename home directory")
 
         # Change the home directory and webtree ownership to the new
@@ -254,13 +255,14 @@ class RBAccount:
         """Disable an account with optional automatic re-enabling after
         given period."""
 
-        #TODO
+        # fixme
 
     def reuser(self, username):
         """Re-enable an account."""
 
-        #TODO
+        # fixme
 
+    # This need to be made and object and passed. To be done with refactoring
     def quota_set(self, username, filesystem, bqs, bqh, iqs, iqh):
         """Set given quota for given username on given filesystem.
         Format for quota values is the same as that used for quotas

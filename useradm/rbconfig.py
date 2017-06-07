@@ -7,6 +7,8 @@
 # System modules
 
 import os
+import random
+import string
 
 #---------------------------------------------------------------------#
 # DATA                                                                #
@@ -17,44 +19,44 @@ __author__ = 'Cillian Sharkey'
 
 # Find out where the rrs directory is.
 
-dir_rrs = (os.path.dirname(__file__) or '.') + os.sep
+DIR_RRS = (os.path.dirname(__file__) or '.') + os.sep
 
 # Maximum length of usernames and groups.
 
-maxlen_uname = 8
-maxlen_group = 8
+MAXLEN_UNAME = 8
+MAXLEN_GROUP = 8
 
 # Default LDAP account attribute values.
 
-ldap_default_objectClass = ['posixAccount', 'top', 'shadowAccount']
-ldap_default_hosts = ['paphos', 'metharme']
+LDAP_DEFAULT_OBJECTCLASS = ['posixAccount', 'top', 'shadowAccount']
+LDAP_DEFAULT_HOSTS = ['paphos', 'metharme']
 
 # RedBrick LDAP settings.
 
-ldap_uri = 'ldap://ldap.internal'
-ldap_root_dn = 'cn=root,ou=ldap,o=redbrick'
-ldap_rootpw_file = '/etc/ldap.secret'
-ldap_tree = 'o=redbrick'
-ldap_accounts_tree = 'ou=accounts,o=redbrick'
-ldap_group_tree = 'ou=groups,o=redbrick'
-ldap_reserved_tree = 'ou=reserved,o=redbrick'
+LDAP_URI = 'ldap://ldap.internal'
+LDAP_ROOT_DN = 'cn=root,ou=ldap,o=redbrick'
+LDAP_ROOTPW_FILE = '/etc/ldap.secret'
+LDAP_TREE = 'o=redbrick'
+LDAP_ACCOUNTS_TREE = 'ou=accounts,o=redbrick'
+LDAP_GROUP_TREE = 'ou=groups,o=redbrick'
+LDAP_RESERVED_TREE = 'ou=reserved,o=redbrick'
 
 # DCU LDAP settings.
 
-ldap_dcu_uri = 'ldap://ad.dcu.ie'
-ldap_dcu_tree = 'o=ad,o=dcu,o=ie'
-ldap_dcu_rbdn = 'CN=rblookup,OU=Service Accounts,DC=ad,DC=dcu,DC=ie'
-ldap_dcu_rbpw = '/etc/dcu_ldap.secret'
-ldap_dcu_students_tree = 'OU=Students,DC=ad,DC=dcu,DC=ie'
+LDAP_DCU_URI = 'ldap://ad.dcu.ie'
+LDAP_DCU_TREE = 'o=ad,o=dcu,o=ie'
+LDAP_DCU_RBDN = 'CN=rblookup,OU=Service Accounts,DC=ad,DC=dcu,DC=ie'
+LDAP_DCU_RBPW = '/etc/dcu_ldap.secret'
+LDAP_DCU_STUDENTS_TREE = 'OU=Students,DC=ad,DC=dcu,DC=ie'
 #'ou=students,dc=ad,dc=dcu,dc=ie'
-ldap_dcu_staff_tree = 'OU=Staff,DC=ad,DC=dcu,DC=ie'
+LDAP_DCU_STAFF_TREE = 'OU=Staff,DC=ad,DC=dcu,DC=ie'
 #'ou=staff,dc=ad,dc=dcu,dc=ie'
-ldap_dcu_alumni_tree = 'OU=Alumni,DC=ad,DC=dcu,DC=ie'
+LDAP_DCU_ALUMNI_TREE = 'OU=Alumni,DC=ad,DC=dcu,DC=ie'
 #'ou=alumni,o=dcu'
 
 # DNS zones RedBrick is authorative for.
 
-dns_zones = (
+DCU_ZONES = (
     'redbrick.dcu.ie',
     'club.dcu.ie',
     'soc.dcu.ie',
@@ -62,104 +64,105 @@ dns_zones = (
 
 # Mailman list suffixes.
 
-mailman_list_suffixes = ("-admin", "-bounces", "-confirm", "-join", "-leave", "-owner", "-request", "-subscribe", "-unsubscribe")
+MAILMAN_LIST_SUFFIXES = ("-admin", "-bounces", "-confirm", "-join", "-leave",
+                         "-owner", "-request", "-subscribe", "-unsubscribe")
 
 # Directory pathnames.
 
-dir_home = '/home'
-dir_webtree = '/webtree'
-dir_signaway_state = '/local/share/agreement/statedir'
-dir_daft = '/local/share/daft'
-dir_skel = '/etc/skel'
-dir_mailman = '/var/lib/mailman'
+DIR_HOME = '/home'
+DIR_WEBTREE = '/webtree'
+DIR_SIGNAWAY_STATE = '/local/share/agreement/statedir'
+DIR_DAFT = '/local/share/daft'
+DIR_SKEL = '/etc/skel'
+DIR_MAILMAN = '/var/lib/mailman'
 
 # Filenames.
 
-file_uidNumber = dir_rrs + 'uidNumber.txt'
-file_pre_sync = dir_rrs + 'presync.txt'
-file_rrslog = dir_rrs + 'rrs.log'
-file_shells = '/etc/shells'
-file_backup_passwd = '/var/backups/passwd.pre-expired'
-shell_default = '/usr/local/shells/zsh'
-shell_expired = '/usr/local/shells/expired'
+FILE_UIDNUMBER = DIR_RRS + 'uidNumber.txt'
+FILE_PRE_SYNC = DIR_RRS + 'presync.txt'
+FILE_RRSLOG = DIR_RRS + 'rrs.log'
+FILE_SHELLS = '/etc/shells'
+FILE_BACKUP_PASSWD = '/var/backups/passwd.pre-expired'
+SHELL_DEFAULT = '/usr/local/shells/zsh'
+SHELL_EXPIRED = '/usr/local/shells/expired'
 
 # Unix group files: (group file, hostname) pairs.
 
-files_group = (
+FILES_GROUP = (
     ('/etc/group', 'Deathray'),
     ('/local/share/var/carbon/group', 'Carbon')
 )
 
 # host files: (host file, hostname) pairs.
 
-files_host = (
+FILES_HOST = (
     ('/etc/hosts', 'Deathray'),
     ('/local/share/var/carbon/hosts', 'Carbon')
 )
 
 # Email alias files.
 
-files_alias = (
+FILES_ALIAS = (
     ('/etc/mail/exim_aliases.txt', 'Mail alias'),
 )
 
 # Commands.
 
-command_setquota = '/usr/sbin/setquota'
-command_chown = '/bin/chown'
-command_chgrp = '/bin/chgrp'
-command_cp = '/bin/cp'
-command_sendmail = '/usr/sbin/sendmail'
+COMMAND_SETQUOTA = '/usr/sbin/setquota'
+COMMAND_CHOWN = '/bin/chown'
+COMMAND_CHGRP = '/bin/chgrp'
+COMMAND_CP = '/bin/cp'
+COMMAND_SENDMAIL = '/usr/sbin/sendmail'
 
-# Valid account usertypes and descriptions.
+# Valid account USERTYPES and descriptions.
 #
-usertypes = {
-    'founders':     'RedBrick founder',
-    'member':       'Normal member',
-    'associat':     'Graduate/associate member',
-    'staff':        'DCU staff member',
-    'society':      'DCU society',
-    'club':         'DCU club',
-    'projects':     'RedBrick/DCU/Course project account',
-    'guest':        'Guest account',
-    'intersoc':     'Account for society from another college',
-    'committe':     'Committee member or a position account',
-    'redbrick':     'RedBrick related account',
-    'dcu':          'DCU related account'
+USERTYPES = {
+    'founders': 'RedBrick founder',
+    'member': 'Normal member',
+    'associat': 'Graduate/associate member',
+    'staff': 'DCU staff member',
+    'society': 'DCU society',
+    'club': 'DCU club',
+    'projects': 'RedBrick/DCU/Course project account',
+    'guest': 'Guest account',
+    'intersoc': 'Account for society from another college',
+    'committe': 'Committee member or a position account',
+    'redbrick': 'RedBrick related account',
+    'dcu': 'DCU related account'
 }
 
-# "Ordered" list of usertypes for listing with the exception of founders.
+# "Ordered" list of USERTYPES for listing with the exception of founders.
 #
-usertypes_list = (
+USERTYPES_LIST = (
     'member', 'associat', 'staff', 'committe',
     'society', 'club', 'dcu',
     'projects', 'redbrick', 'intersoc', 'guest'
 )
 
-# List of paying usertypes.
+# List of paying USERTYPES.
 #
-usertypes_paying = ('member', 'associat', 'staff', 'committe', 'guest')
+USERTYPES_PAYING = ('member', 'associat', 'staff', 'committe', 'guest')
 
-# List of dcu usertypes (i.e. require a id number)
+# List of dcu USERTYPES (i.e. require a id number)
 #
-usertypes_dcu = ('member', 'associat', 'staff', 'committe')
+USERTYPES_DCU = ('member', 'associat', 'staff', 'committe')
 
-# Pseudo usertypes for conversion to committee positions.
+# Pseudo USERTYPES for conversion to committee positions.
 #
-convert_usertypes = {
-    'admin':        'Elected admin',
-    'webmaster':    'Elected webmaster',
-    'helpdesk':     'Elected helpdesk'
+CONVERT_USERTYPES = {
+    'admin': 'Elected admin',
+    'webmaster': 'Elected webmaster',
+    'helpdesk': 'Elected helpdesk'
 }
 
 # Supplementary groups when converting an account to given usertype.
 #
 # Format: 'usertype': 'a string of comma seperated groups with no spaces'
 #
-convert_extra_groups = {
-    'admin':        'root,log',
-    'webmaster':    'root,log,webgroup',
-    'helpdesk':     'helpdesk'
+CONVERT_EXTRA_GROUPS = {
+    'admin': 'root,log',
+    'webmaster': 'root,log,webgroup',
+    'helpdesk': 'helpdesk'
 }
 
 # Actual primary group to use when converting an account to given usertype
@@ -167,18 +170,22 @@ convert_extra_groups = {
 #
 # Format: 'usertype': 'actual unix group name'
 #
-convert_primary_groups = {
-    'admin':        'committe',
-    'webmaster':    'committe',
-    'helpdesk':     'committe'
+CONVERT_PRIMARY_GROUPS = {
+    'admin': 'committe',
+    'webmaster': 'committe',
+    'helpdesk': 'committe'
 }
 
 #---------------------------------------------------------------------#
 # MODULE FUNCTIONS                                                    #
 #---------------------------------------------------------------------#
 
+
 def gen_passwd():
-    pass
+    """Create a random string and return it for the users password"""
+    return ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits)
+                   for _ in range(12))
+
 
 def gen_homedir(username, usertype):
     """Construct a user's home directory path given username and usertype."""
@@ -188,12 +195,14 @@ def gen_homedir(username, usertype):
     else:
         letter = ''
 
-    return '%s/%s/%s%s' % (dir_home, usertype, letter, username)
+    return '%s/%s/%s%s' % (DIR_HOME, usertype, letter, username)
+
 
 def gen_webtree(username):
     """Generate a user's webtree path for given username."""
 
-    return os.path.join(dir_webtree, username[0], username)
+    return os.path.join(DIR_WEBTREE, username[0], username)
+
 
 def gen_quotas():
     """Returns a dictionary of quota limits for filesystems (possibly
@@ -213,14 +222,15 @@ def gen_quotas():
         '/storage': (1000000, 1100000, 800000, 1000000)
     }
 
+
 def gen_extra_user_files(username):
     """Return list of files that may belong to the given user outside of
     their main storage areas. For purposes of renaming or deleting."""
 
-    # XXX: need files for carbon now aswell.
+    # fixme: need files for carbon now aswell.
 
-    return  (
-        '%s/%s' % (dir_signaway_state, username),
+    return (
+        '%s/%s' % (DIR_SIGNAWAY_STATE, username),
         '/var/mail/%s' % username,
         '/var/spool/cron/crontabs/%s' % username
     )

@@ -15,6 +15,7 @@ __author__ = 'Cillian Sharkey'
 # CLASSES                                                                     #
 #-----------------------------------------------------------------------------#
 
+
 class RBOpt:
     """Class for storing options to be shared by modules"""
 

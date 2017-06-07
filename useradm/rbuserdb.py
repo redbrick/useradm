@@ -32,6 +32,7 @@ __author__ = 'Cillian Sharkey'
 # CLASSES                                                                     #
 #-----------------------------------------------------------------------------#
 
+
 class RBUserDB:
     """Class to interface with user database."""
     valid_shells = None
@@ -43,7 +44,7 @@ class RBUserDB:
         self.ldap = None
         self.ldap_dcu = None
 
-    #def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None,
+    # def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None,
     #            dcu_uri = rbconfig.ldap_dcu_uri):
     def connect(self, uri=rbconfig.ldap_uri, dn=rbconfig.ldap_root_dn, password=None,
                 dcu_uri=rbconfig.ldap_dcu_uri, dcu_dn=rbconfig.ldap_dcu_rbdn, dcu_pw=None):
@@ -144,7 +145,7 @@ class RBUserDB:
     # INFORMATION RETRIEVAL METHODS                                       #
     #---------------------------------------------------------------------#
 
-    # XXX still needed ?
+    # fixme still needed ?
 #   def get_usertype_byname(self, uid):
 #       """Return usertype for username in user database. Raise
 #       RBFatalError if user does not exist."""
@@ -183,7 +184,7 @@ class RBUserDB:
         """Checks if ID already belongs to an existing user and if so
         raises RBFatalError. Populates RBUser object with data for new
         user from DCU databases otherwise raises RBWarningError."""
-        if usr.id != None:
+        if usr.id is not None:
             tmpusr = RBUser(id=usr.id)
             try:
                 self.get_user_byid(tmpusr)
@@ -211,7 +212,7 @@ class RBUserDB:
             self.get_user_byid(curusr)
 
         usr.usertype = usr.usertype or curusr.usertype
-        usr.id = usr.id != None and usr.id or curusr.id
+        usr.id = usr.id if usr.id is not None else curusr.id
         self.check_renewal_usertype(usr.usertype)
 
         if usr.usertype in rbconfig.usertypes_dcu:
@@ -296,7 +297,7 @@ class RBUserDB:
         else:
             usertype = 'staff'
 
-        # XXX: this overrides committe people (typically back to member)
+        # fixme: this overrides committe people (typically back to member)
         # which probably shouldn't be done?
         if usertype and (override or not usr.usertype):
             usr.usertype = usertype
@@ -407,7 +408,7 @@ class RBUserDB:
     def get_backup_shell(self, username):
         """Return shell for given user from previous year's LDAP tree
         or failing that, the default shell."""
-        # XXX Use old passwd.backup file FTTB. Should use
+        # fixme Use old passwd.backup file FTTB. Should use
         # ou=<prevyear>,ou=accounts tree instead.
         if self.backup_shells is None:
             self.backup_shells = {}
@@ -466,14 +467,14 @@ class RBUserDB:
     @classmethod
     def check_renewal_usertype(cls, usertype):
         """Raise RBFatalError if renewal usertype is not valid."""
-        if not usertype in rbconfig.usertypes_paying:
+        if usertype not in rbconfig.usertypes_paying:
             raise RBFatalError("Invalid renewal usertype '%s'" % usertype)
 
     @classmethod
     def check_id(cls, usr):
         """Raise RBFatalError if ID is not valid for usertypes that require one."""
         if usr.usertype in rbconfig.usertypes_dcu:
-            if usr.id != None:
+            if usr.id is not None:
                 if not isinstance(usr.id, int):
                     raise RBFatalError('ID must be an integer')
                 if usr.id >= 100000000:
@@ -485,7 +486,7 @@ class RBUserDB:
     def check_years_paid(cls, usr):
         """Raise RBFatalError if years_paid is not valid."""
         if usr.usertype in rbconfig.usertypes_paying:
-            if usr.yearsPaid != None:
+            if usr.yearsPaid is not None:
                 if not isinstance(usr.yearsPaid, int):
                     raise RBFatalError('Years paid must be an integer')
                 if usr.yearsPaid < -1:
@@ -540,7 +541,7 @@ class RBUserDB:
     def check_unpaid(self, usr):
         """Raise RBWarningError if the user is already paid up."""
 
-        if usr.yearsPaid != None and usr.yearsPaid > 0:
+        if usr.yearsPaid is not None and usr.yearsPaid > 0:
             self.rberror(RBWarningError("User '%s' is already paid!" % usr.uid))
 
     #---------------------------------------------------------------------#
@@ -691,7 +692,7 @@ class RBUserDB:
         """Show RBUser object information on standard output."""
 
         for i in usr.attr_list_all:
-            if getattr(usr, i) != None:
+            if getattr(usr, i) is not None:
                 print("%13s: %s" % (i, getattr(usr, i)))
 
     @classmethod
@@ -699,7 +700,7 @@ class RBUserDB:
         """Show passwordless RBUser object information on standard output."""
 
         for i in usr.attr_list_info:
-            if getattr(usr, i) != None:
+            if getattr(usr, i) is not None:
                 print("%13s: %s" % (i, getattr(usr, i)))
 
     @classmethod
@@ -713,7 +714,7 @@ class RBUserDB:
 
         for i in 'uid', 'usertype', 'newbie', 'cn', 'altmail', 'id', 'course', 'year', 'yearsPaid':
             info = getattr(usr, i)
-            if info != None:
+            if info is not None:
                 old_info = getattr(oldusr, i, None)
                 print("%15s: %s" % (old_info != info and "(NEW) " + i or i, info))
                 if old_info != info:
@@ -887,8 +888,8 @@ class RBUserDB:
         and data."""
         raise RBFatalError("NOT IMLEMENTED YET")
         self.cur.execute(('SELECT username, usertype, id, name, course, year, email '
-                          'FROM users WHERE ')
-                         + where + ' %s', ('%%%s%%' % var,))
+                          'FROM users WHERE ') +
+                         where + ' %s', ('%%%s%%' % var,))
         return self.cur.fetchall()
 
     def search_dcu_byid(self, user_id):
@@ -960,7 +961,7 @@ class RBUserDB:
             usertypes[usr.usertype]['TOTAL'] += 1
             signed = not self.opt.dbonly and os.path.exists(os.path.join(
                 rbconfig.dir_signaway_state, uid))
-            pay = usr.yearsPaid == None and 'nonpay' or usr.yearsPaid > 0 and 'paid' or 'unpaid'
+            pay = usr.yearsPaid is None and 'nonpay' or usr.yearsPaid > 0 and 'paid' or 'unpaid'
             usertypes[usr.usertype][pay] += 1
             usertypes[usr.usertype]['%s_%s' % (not signed and 'nosign' or 'signed', pay)] += 1
 
@@ -983,7 +984,7 @@ class RBUserDB:
         print(" " * 9, end=' ')
         for cat in categories:
             if len(cat) > 6:
-                print("%7.6s" % cat[-(len(cat)-6):], end=' ')
+                print("%7.6s" % cat[-(len(cat) - 6):], end=' ')
             else:
                 print("%7s" % cat, end=' ')
         print()
@@ -1042,7 +1043,7 @@ class RBUserDB:
         if password:
             return "{CRYPT}" + cls.crypt(password)
 
-        # XXX: is this correct way to disable password?
+        # fixme: is this correct way to disable password?
         return "{CRYPT}*"
 
     @classmethod
@@ -1155,13 +1156,13 @@ class RBUserDB:
             ('userPassword', usr.userPassword),
             ('host', usr.host)
         ]
-        if usr.id != None:
+        if usr.id is not None:
             tmp.append(('id', str(usr.id)))
         if usr.course:
             tmp.append(('course', usr.course))
-        if usr.year != None:
+        if usr.year is not None:
             tmp.append(('year', usr.year))
-        if usr.yearsPaid != None:
+        if usr.yearsPaid is not None:
             tmp.append(('yearsPaid', str(usr.yearsPaid)))
         if usr.birthday:
             tmp.append(('birthday', usr.birthday))
@@ -1179,13 +1180,13 @@ class RBUserDB:
             (ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
             (ldap.MOD_REPLACE, 'updated', usr.updated),
         ]
-        if usr.id != None:
+        if usr.id is not None:
             tmp.append((ldap.MOD_REPLACE, 'id', str(usr.id)))
         if usr.course:
             tmp.append((ldap.MOD_REPLACE, 'course', usr.course))
-        if usr.year != None:
+        if usr.year is not None:
             tmp.append((ldap.MOD_REPLACE, 'year', usr.year))
-        if usr.yearsPaid != None:
+        if usr.yearsPaid is not None:
             tmp.append((ldap.MOD_REPLACE, 'yearsPaid', str(usr.yearsPaid)))
         if usr.birthday:
             tmp.append((ldap.MOD_REPLACE, 'birthday', usr.birthday))
@@ -1203,13 +1204,13 @@ class RBUserDB:
             (ldap.MOD_REPLACE, 'updatedby', usr.updatedby),
             (ldap.MOD_REPLACE, 'updated', usr.updated)
         ]
-        if usr.id != None:
+        if usr.id is not None:
             tmp.append((ldap.MOD_REPLACE, 'id', str(usr.id)))
         if usr.course:
             tmp.append((ldap.MOD_REPLACE, 'course', usr.course))
-        if usr.year != None:
+        if usr.year is not None:
             tmp.append((ldap.MOD_REPLACE, 'year', usr.year))
-        if usr.yearsPaid != None:
+        if usr.yearsPaid is not None:
             tmp.append((ldap.MOD_REPLACE, 'yearsPaid', str(usr.yearsPaid)))
         if usr.birthday:
             tmp.append((ldap.MOD_REPLACE, 'birthday', usr.birthday))
