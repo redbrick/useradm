@@ -1,0 +1,21 @@
+version: "3"
+services:
+  useradm:
+    build: ./useradm
+    networks:
+      - internal
+    depends_on:
+      - ldap
+  ldap:
+    image: dinkel/openldap
+    container_name: ldap
+    networks:
+      - internal
+    environment:
+      SLAPD_PASSWORD: 'redbrick'
+      SLAPD_DOMAIN: 'ldap.redbrick'
+    volumes:
+      - ./ldif:/etc/ldap.dist/prepopulate
+
+networks:
+  internal:

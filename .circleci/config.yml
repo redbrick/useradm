@@ -1,15 +1,19 @@
+---
 version: 2
 jobs:
   build:
+    working_directory: ~/useradm
     docker:
-      - image: python:3.5
-    working_directory: /home/ubuntu/useradm
+      - image: python:3-alpine
+        environment:
+          ENV: CI
+      - image: dinkel/openldap
+        environment:
+          SLAPD_PASSWORD: 'redbrick'
+          SLAPD_DOMAIN: 'ldap.internal'
     steps:
+      - run: apk add --no-cache openldap-dev cyrus-sasl-dev git build-base
       - checkout
-      - run: apt-get update && apt-get install libldap2-dev libsasl2-dev -y
       - run: pip install -r requirements.txt
-      - store_artifacts:
-          path: test-reports/coverage
-          destination: reports
       - store_test_results:
           path: "test-reports/"
