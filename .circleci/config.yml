@@ -14,6 +14,6 @@ jobs:
     steps:
       - run: apk add --no-cache openldap-dev cyrus-sasl-dev git build-base
       - checkout
-      - run: pip install -r requirements.txt
+      - run: pip install -r useradm/requirements.txt
       - store_test_results:
           path: "test-reports/"

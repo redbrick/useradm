@@ -46,8 +46,8 @@ class RBUserDB:
 
     # def connect(self, uri = rbconfig.ldap_uri, dn = rbconfig.ldap_root_dn, password = None,
     #            dcu_uri = rbconfig.ldap_dcu_uri):
-    def connect(self, uri=rbconfig.ldap_uri, dn=rbconfig.ldap_root_dn, password=None,
-                dcu_uri=rbconfig.ldap_dcu_uri, dcu_dn=rbconfig.ldap_dcu_rbdn, dcu_pw=None):
+    def connect(self, uri=rbconfig.LDAP_URI, dn=rbconfig.LDAP_ROOT_DN, password=None,
+                dcu_uri=rbconfig.LDAP_DCU_URI, dcu_dn=rbconfig.LDAP_DCU_RBDN, dcu_pw=None):
         """Connect to databases.
         Custom URI, DN and password may be given for RedBrick LDAP.
         Password if not given will be read from shared secret file set
@@ -55,7 +55,7 @@ class RBUserDB:
         Custom URI may be given for DCU LDAP. """
         if not password:
             try:
-                pw_file = open(rbconfig.ldap_rootpw_file, 'r')
+                pw_file = open(rbconfig.LDAP_ROOTPW_FILE, 'r')
                 password = pw_file.readline().rstrip()
             except IOError:
                 raise RBFatalError("Unable to open LDAP root password file")
@@ -63,7 +63,7 @@ class RBUserDB:
 
         if not dcu_pw:
             try:
-                pw_file = open(rbconfig.ldap_dcu_rbpw, 'r')
+                pw_file = open(rbconfig.LDAP_DCU_RBPW, 'r')
                 dcu_pw = pw_file.readline().rstrip()
             except IOError:
                 raise RBFatalError("Unable to open DCU AD root password file")
