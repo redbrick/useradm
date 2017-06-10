@@ -15,5 +15,6 @@ jobs:
       - run: apk add --no-cache openldap-dev cyrus-sasl-dev git build-base
       - checkout
       - run: pip install -r useradm/requirements.txt
+      - run: python -m unittest discover -v
       - store_test_results:
           path: "test-reports/"

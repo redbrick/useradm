@@ -16,7 +16,7 @@ __author__ = 'Cillian Sharkey'
 #-----------------------------------------------------------------------------#
 
 
-class RBUser:
+class RBUser():
     """Class to represent a user."""
 
     # List of valid LDAP attributes for a user. The order of these is used
@@ -123,14 +123,28 @@ class RBUser:
             for i in self.attr_list_all:
                 setattr(self, i, getattr(usr, i))
 
+        self.set_attr()
+
+    def __str__(self):
+        """Returns a string representation of a user"""
+        attr = list(sorted(self.__dict__, key=str))
+        attr = sorted(attr, key=len)
+        output_string = ''
+        for i in attr:
+            space = 18 - len(i)
+            if i in self.attr_list_all and self.__dict__[i] is not None:
+                output_string += i + ' ' * space + ':  ' + str(self.__dict__[i]) + '\n'
+            else:
+                output_string += i + ' ' * space + ': ' + ' ----- ' + '\n'
+        return output_string
+
+    def set_attr(self, **attrs):
+        """Sets one or many arrtributes of the user"""
+
         for i in self.attr_list_all:
             if i in attrs:
                 setattr(self, i, attrs[i])
             elif not hasattr(self, i):
-                # fixme set list attributes to empty list [] or None ??
-                # if i in self.attr_list_value:
-                #       setattr(self, i, [])
-                # else:
                 setattr(self, i, None)
 
     def merge(self, usr, override=0):
