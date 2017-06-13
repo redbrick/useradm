@@ -1,80 +1,33 @@
 """RedBrick Test Module; Tests the to_string method of the rbuser module."""
 
 import unittest
+
+from tests import data_rbuser_tostring as data
 from useradm import rbuser
 
 
 class RBUserTestCase(unittest.TestCase):
     """Test Case class for to_string method"""
 
-    def setUp(self):
-        """Call before every test case."""
-        self.member_one_attr = {'cn': 'Member One',
-                                'id': 15358462,
-                                'uid': 'memberOne',
-                                'bday': 12,
-                                'host': 'carbon',
-                                'year': 3,
-                                'gecos': 'new member',
-                                'byear': 2017,
-                                'bmonth': 2,
-                                'passwd': 'e1NTSEF9WlBURGtJdmZJSld0WUlrak9zdGxscXYySTRRVEhBYj=',
-                                'newbie': True,
-                                'course': 'CASE',
-                                'created': '2009-10-06 11:20:13',
-                                'altmail': 'memberOne@example.dcu.ie',
-                                'updated': '2015-09-28 01:42:21',
-                                'birthday': '12 02 2017',
-                                'usertype': 'member',
-                                'updatedby': 'admin',
-                                'uidNumber': 102007,
-                                'createdby': 'admin',
-                                'gidNumber': 1017,
-                                'yearsPaid': 1,
-                                'loginShell': '/usr/local/shells/zsh',
-                                'objectClass': ['redbrick', 'posixAccount', 'top', 'shadowAccount'],
-                                'oldusertype': 'newb',
-                                'userPassword': 'e1NTSEF9WlBURGtJdmZJSld0WUlrak9zdGxscXYySTRRVEhj=',
-                                'homeDirectory': '/home/redbrick/memberOne',
-                                'disuser_period': 0,
-                                'shadowLastChange': 17073, }
-        self.member_one_output = \
-            'cn                :  Member One\n' + \
-            'id                :  15358462\n' + \
-            'uid               :  memberOne\n' + \
-            'bday              :  12\n' + \
-            'host              :  carbon\n' + \
-            'year              :  3\n' + \
-            'byear             :  2017\n' + \
-            'gecos             :  new member\n' + \
-            'bmonth            :  2\n' + \
-            'course            :  CASE\n' + \
-            'newbie            :  True\n' + \
-            'passwd            :  e1NTSEF9WlBURGtJdmZJSld0WUlrak9zdGxscXYySTRRVEhBYj=\n' + \
-            'altmail           :  memberOne@example.dcu.ie\n' + \
-            'created           :  2009-10-06 11:20:13\n' + \
-            'updated           :  2015-09-28 01:42:21\n' + \
-            'birthday          :  12 02 2017\n' + \
-            'usertype          :  member\n' + \
-            'createdby         :  admin\n' + \
-            'gidNumber         :  1017\n' + \
-            'uidNumber         :  102007\n' + \
-            'updatedby         :  admin\n' + \
-            'yearsPaid         :  1\n' + \
-            'loginShell        :  /usr/local/shells/zsh\n' + \
-            'objectClass       :  [\'redbrick\', \'posixAccount\', \'top\', ' + \
-            '\'shadowAccount\']\n' + \
-            'oldusertype       :  newb\n' + \
-            'userPassword      :  e1NTSEF9WlBURGtJdmZJSld0WUlrak9zdGxscXYySTRRVEhj=\n' + \
-            'homeDirectory     :  /home/redbrick/memberOne\n' + \
-            'disuser_period    :  0\n' + \
-            'shadowLastChange  :  17073\n'
-
-    def test_to_string(self):
-        """Test case A. note that all test method names must begin with 'test.'"""
+    def test_member_one(self):
+        """Test case A. Member One"""
         member_one = rbuser.RBUser()
-        member_one.set_attr(**self.member_one_attr)
-        assert member_one.__str__() == self.member_one_output, 'member1 attributes not as expected'
+        member_one.set_attr(**data.MEMBER_ONE_ATTR)
+        to_string_output = member_one.__str__()
+        assert to_string_output == data.MEMBER_ONE_OUTPUT, \
+            'member1 attributes not as expected. ' + \
+            'Diff at: ' + [i for i in range(len(data.MEMBER_ONE_OUTPUT))
+                           if data.MEMBER_ONE_OUPUT[i] != to_string_output[i]]
+
+    def test_associate_one(self):
+        """Test case B. Associate One"""
+        associate_one = rbuser.RBUser()
+        associate_one.set_attr(**data.ASSOCIATE_ONE_ATTR)
+        to_string_output = associate_one.__str__()
+        assert associate_one.__str__() == data.ASSOCIATE_ONE_OUTPUT, \
+            'associate one attributes not as expected' + \
+            'Diff at: ' + [i for i in range(len(data.ASSOCIATE_ONE_OUTPUT))
+                           if data.ASSOCIATE_ONE_OUTPUT[i] != to_string_output[i]]
 
 if __name__ == "__main__":
     unittest.main()  # run all tests
