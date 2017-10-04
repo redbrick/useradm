@@ -248,3 +248,8 @@ of course suited for the RedBrick system.
 
 At this point, all necessary installation and configuration should be complete
 for use of RRS.
+
+
+### Contribution
+
+Our [open issues](https://github.com/redbrick/useradm/issues) can be found [here](https://github.com/redbrick/useradm/issues)!
