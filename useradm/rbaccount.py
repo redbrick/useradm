@@ -1,7 +1,6 @@
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # MODULE DESCRIPTION                                                          #
-#-----------------------------------------------------------------------------#
-
+# --------------------------------------------------------------------------- #
 """RedBrick Account Module; contains RBAccount class."""
 
 # System modules
@@ -10,22 +9,22 @@ import re
 import shutil
 import sys
 
-# RedBrick modules
-
 import rbconfig
 from rberror import RBFatalError, RBWarningError
 from rbopt import RBOpt
 
-#-----------------------------------------------------------------------------#
+# RedBrick modules
+
+# --------------------------------------------------------------------------- #
 # DATA                                                                        #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 __version__ = '$Revision: 1.8 $'
 __author__ = 'Cillian Sharkey'
 
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # CLASSES                                                                     #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 
 class RBAccount:
@@ -41,9 +40,9 @@ class RBAccount:
 
         self.opt = opt
 
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
     # SINGLE ACCOUNT METHODS                                              #
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
 
     def add(self, usr):
         """Add account."""
@@ -53,12 +52,15 @@ class RBAccount:
         webtree = rbconfig.gen_webtree(usr.uid)
         self.wrapper(os.mkdir, webtree, 0o711)
         self.wrapper(os.chown, webtree, usr.uidNumber, usr.gidNumber)
-        self.cmd('%s -Rp %s %s' % (rbconfig.command_cp, rbconfig.dir_skel, usr.homeDirectory))
+        self.cmd('%s -Rp %s %s' % (rbconfig.command_cp, rbconfig.dir_skel,
+                                   usr.homeDirectory))
         self.wrapper(os.chmod, usr.homeDirectory, 0o711)
-        self.wrapper(os.symlink, webtree, os.path.join(usr.homeDirectory, 'public_html'))
+        self.wrapper(os.symlink, webtree,
+                     os.path.join(usr.homeDirectory, 'public_html'))
         # symlink vuln fix
         try:
-            self.wrapper(os.chown, os.path.join(usr.homeDirectory, 'public_html'),
+            self.wrapper(os.chown,
+                         os.path.join(usr.homeDirectory, 'public_html'),
                          usr.uidNumber, usr.gidNumber)
         except OSError:
             pass
@@ -77,12 +79,15 @@ class RBAccount:
 
         # Change user & group ownership recursively on home directory.
         #
-        self.cmd('%s -Rh %s:%s %s' % (rbconfig.command_chown, usr.uidNumber,
-                                      usr.usertype, self.shquote(usr.homeDirectory)))
+        self.cmd('%s -Rh %s:%s %s' %
+                 (rbconfig.command_chown, usr.uidNumber, usr.usertype,
+                  self.shquote(usr.homeDirectory)))
 
         # Set quotas for each filesystem.
         #
-        for filesystem, (bqs, bqh, iqs, iqh) in list(rbconfig.gen_quotas(usr.usertype).items()):
+        for filesystem, (
+                bqs, bqh, iqs,
+                iqh) in list(rbconfig.gen_quotas(usr.usertype).items()):
             self.quota_set(usr.uidNumber, filesystem, bqs, bqh, iqs, iqh)
 
         # Add to redbrick announcement mailing lists.
@@ -139,10 +144,13 @@ class RBAccount:
                 try:
                     self.wrapper(os.unlink, newusr.homeDirectory)
                 except OSError:
-                    raise RBFatalError(("New home directory '%s' already exists,"
-                                        " could not unlink existing file.") % newusr.homeDirectory)
+                    raise RBFatalError(
+                        ("New home directory '%s' already exists,"
+                         " could not unlink existing file.") %
+                        newusr.homeDirectory)
             else:
-                raise RBFatalError("New home directory '%s' already exists." % newusr.homeDirectory)
+                raise RBFatalError("New home directory '%s' already exists." %
+                                   newusr.homeDirectory)
 
         oldwebtree = rbconfig.gen_webtree(oldusr.uid)
         newwebtree = rbconfig.gen_webtree(newusr.uid)
@@ -180,14 +188,17 @@ class RBAccount:
                 if os.path.isfile(oldf):
                     self.wrapper(os.rename, oldf, newf)
             except OSError as err:
-                raise RBFatalError("Could not rename '%s' to '%s' [%s]" % (oldf, newf, err))
+                raise RBFatalError("Could not rename '%s' to '%s' [%s]" %
+                                   (oldf, newf, err))
 
         # fixme
         # Rename their subscription to announce lists in case an email
         # alias isn't put in for them or is later removed.
         #
-        self.list_delete('announce-redbrick', "%s@redbrick.dcu.ie" % oldusr.uid)
-        self.list_delete('redbrick-newsletter', "%s@redbrick.dcu.ie" % oldusr.uid)
+        self.list_delete('announce-redbrick',
+                         "%s@redbrick.dcu.ie" % oldusr.uid)
+        self.list_delete('redbrick-newsletter',
+                         "%s@redbrick.dcu.ie" % oldusr.uid)
         self.list_add('announce-redbrick', "%s@redbrick.dcu.ie" % newusr.uid)
         self.list_add('redbrick-newsletter', "%s@redbrick.dcu.ie" % newusr.uid)
 
@@ -209,18 +220,23 @@ class RBAccount:
         # else:
         #       groups = ''
 
-        if newusr.usertype == 'committe' and oldusr.usertype not in ('member', 'staff', 'committe'):
-            raise RBFatalError("Non-members cannot be converted to committee group")
+        if newusr.usertype == 'committe' and oldusr.usertype not in (
+                'member', 'staff', 'committe'):
+            raise RBFatalError(
+                "Non-members cannot be converted to committee group")
 
         if os.path.exists(newusr.homeDirectory):
             if not os.path.isdir(newusr.homeDirectory):
                 try:
                     self.wrapper(os.unlink, newusr.homeDirectory)
                 except OSError:
-                    raise RBFatalError(("New home directory '%s' already exists, "
-                                        "could not unlink existing file.") % newusr.homeDirectory)
+                    raise RBFatalError(
+                        ("New home directory '%s' already exists, "
+                         "could not unlink existing file.") %
+                        newusr.homeDirectory)
             else:
-                raise RBFatalError("New home directory '%s' already exists." % newusr.homeDirectory)
+                raise RBFatalError("New home directory '%s' already exists." %
+                                   newusr.homeDirectory)
 
         # Rename home directory.
         #
@@ -234,9 +250,10 @@ class RBAccount:
         # links themselves not the files they point to - very
         # important!!
         #
-        self.cmd("%s -Rh %s %s %s" % (rbconfig.command_chgrp, newusr.gidNumber,
-                                      self.shquote(newusr.homeDirectory),
-                                      self.shquote(rbconfig.gen_webtree(oldusr.uid))))
+        self.cmd("%s -Rh %s %s %s" %
+                 (rbconfig.command_chgrp, newusr.gidNumber,
+                  self.shquote(newusr.homeDirectory),
+                  self.shquote(rbconfig.gen_webtree(oldusr.uid))))
 
         # Add/remove from committee mailing list as appropriate.
         #
@@ -268,17 +285,18 @@ class RBAccount:
         Format for quota values is the same as that used for quotas
         function in rbconfig module."""
 
-        self.cmd("%s -r %s %d %d %d %d %s" % (
-            rbconfig.command_setquota, self.shquote(str(username)), bqs, bqh, iqs, iqh, filesystem))
+        self.cmd("%s -r %s %d %d %d %d %s" %
+                 (rbconfig.command_setquota, self.shquote(str(username)), bqs,
+                  bqh, iqs, iqh, filesystem))
 
     def quota_delete(self, username, filesystem):
         """Delete quota for given username on given filesystem."""
 
         self.quota_set(username, filesystem, 0, 0, 0, 0)
 
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
     # SINGLE ACCOUNT INFORMATION METHODS                                  #
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
 
     @classmethod
     def show(cls, usr):
@@ -289,12 +307,15 @@ class RBAccount:
             print('%04o' % (os.stat(usr.homeDirectory)[0] & 0o7777))
         else:
             print('Home directory does not exist')
-        print("%13s: %s" % ('logged in', os.path.exists(os.path.join(
-            rbconfig.dir_signaway_state, usr.uid)) and 'true' or 'false'))
+        print("%13s: %s" % (
+            'logged in',
+            os.path.exists(
+                os.path.join(rbconfig.dir_signaway_state, usr.uid)
+            ) and 'true' or 'false'))
 
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
     # USER CHECKING AND INFORMATION RETRIEVAL METHODS                     #
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
 
     @classmethod
     def check_accountfree(cls, usr):
@@ -302,24 +323,27 @@ class RBAccount:
         has a home directory."""
 
         if os.path.exists(usr.homeDirectory):
-            raise RBFatalError("Account '%s' already exists (has a home directory)" % usr.uid)
+            raise RBFatalError(
+                "Account '%s' already exists (has a home directory)" % usr.uid)
 
     @classmethod
     def check_account_byname(cls, usr):
         """Raise RBFatalError if given account does not exist."""
 
         if not os.path.exists(usr.homeDirectory):
-            raise RBFatalError("Account '%s' does not exist (no home directory)" % usr.uid)
+            raise RBFatalError(
+                "Account '%s' does not exist (no home directory)" % usr.uid)
 
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
     # OTHER METHODS                                                       #
-    #---------------------------------------------------------------------#
+    # ------------------------------------------------------------------- #
 
     def list_add(self, mail_list, email):
         """Add email address to mailing list."""
 
         list_file = self.my_popen("su -c '%s/bin/add_members -r - %s' list" %
-                                  (rbconfig.dir_mailman, self.shquote(mail_list)))
+                                  (rbconfig.dir_mailman,
+                                   self.shquote(mail_list)))
         list_file.write('%s\n' % email)
         self.my_close(list_file)
 
@@ -327,11 +351,12 @@ class RBAccount:
         """Delete email address from a mailing list."""
 
         self.runcmd("su -c '%s/bin/remove_members %s %s' list" %
-                    (rbconfig.dir_mailman, self.shquote(mail_list), self.shquote(email)))
+                    (rbconfig.dir_mailman, self.shquote(mail_list),
+                     self.shquote(email)))
 
-    #--------------------------------------------------------------------#
+    # ------------------------------------------------------------------ #
     # INTERNAL METHODS                                                   #
-    #--------------------------------------------------------------------#
+    # ------------------------------------------------------------------ #
 
     @classmethod
     def shquote(cls, string):
@@ -368,7 +393,7 @@ class RBAccount:
         if self.opt.test:
             sys.stderr.write("TEST: %s(" % function.__name__)
             for i in keywords:
-                sys.stderr.write("%s, " % (i,))
+                sys.stderr.write("%s, " % (i, ))
             for k, msg in list(arguments.items()):
                 sys.stderr.write("%s = %s, " % (k, msg))
             sys.stderr.write(")\n")
@@ -397,9 +422,9 @@ class RBAccount:
         if not self.opt.test:
             open_file.close()
 
-    #--------------------------------------------------------------------#
+    # ------------------------------------------------------------------ #
     # ERROR HANDLING                                                     #
-    #--------------------------------------------------------------------#
+    # ------------------------------------------------------------------ #
 
     def rberror(self, err):
         """Handle errors."""

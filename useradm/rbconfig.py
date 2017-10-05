@@ -1,7 +1,6 @@
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # MODULE DESCRIPTION                                                          #
-#-----------------------------------------------------------------------------#
-
+# --------------------------------------------------------------------------- #
 """RedBrick Configuration Module; contains local configuration information."""
 
 # System modules
@@ -10,9 +9,9 @@ import os
 import random
 import string
 
-#---------------------------------------------------------------------#
+# ------------------------------------------------------------------- #
 # DATA                                                                #
-#---------------------------------------------------------------------#
+# ------------------------------------------------------------------- #
 
 __version__ = '$Revision: 1.11 $'
 __author__ = 'Cillian Sharkey'
@@ -48,19 +47,18 @@ LDAP_DCU_TREE = 'o=ad,o=dcu,o=ie'
 LDAP_DCU_RBDN = 'CN=rblookup,OU=Service Accounts,DC=ad,DC=dcu,DC=ie'
 LDAP_DCU_RBPW = '/etc/dcu_ldap.secret'
 LDAP_DCU_STUDENTS_TREE = 'OU=Students,DC=ad,DC=dcu,DC=ie'
-#'ou=students,dc=ad,dc=dcu,dc=ie'
+# 'ou=students,dc=ad,dc=dcu,dc=ie'
 LDAP_DCU_STAFF_TREE = 'OU=Staff,DC=ad,DC=dcu,DC=ie'
-#'ou=staff,dc=ad,dc=dcu,dc=ie'
+# 'ou=staff,dc=ad,dc=dcu,dc=ie'
 LDAP_DCU_ALUMNI_TREE = 'OU=Alumni,DC=ad,DC=dcu,DC=ie'
-#'ou=alumni,o=dcu'
+# 'ou=alumni,o=dcu'
 
 # DNS zones RedBrick is authorative for.
 
 DCU_ZONES = (
     'redbrick.dcu.ie',
     'club.dcu.ie',
-    'soc.dcu.ie',
-)
+    'soc.dcu.ie', )
 
 # Mailman list suffixes.
 
@@ -88,23 +86,17 @@ SHELL_EXPIRED = '/usr/local/shells/expired'
 
 # Unix group files: (group file, hostname) pairs.
 
-FILES_GROUP = (
-    ('/etc/group', 'Deathray'),
-    ('/local/share/var/carbon/group', 'Carbon')
-)
+FILES_GROUP = (('/etc/group', 'Deathray'), ('/local/share/var/carbon/group',
+                                            'Carbon'))
 
 # host files: (host file, hostname) pairs.
 
-FILES_HOST = (
-    ('/etc/hosts', 'Deathray'),
-    ('/local/share/var/carbon/hosts', 'Carbon')
-)
+FILES_HOST = (('/etc/hosts', 'Deathray'), ('/local/share/var/carbon/hosts',
+                                           'Carbon'))
 
 # Email alias files.
 
-FILES_ALIAS = (
-    ('/etc/mail/exim_aliases.txt', 'Mail alias'),
-)
+FILES_ALIAS = (('/etc/mail/exim_aliases.txt', 'Mail alias'), )
 
 # Commands.
 
@@ -133,11 +125,8 @@ USERTYPES = {
 
 # "Ordered" list of USERTYPES for listing with the exception of founders.
 #
-USERTYPES_LIST = (
-    'member', 'associat', 'staff', 'committe',
-    'society', 'club', 'dcu',
-    'projects', 'redbrick', 'intersoc', 'guest'
-)
+USERTYPES_LIST = ('member', 'associat', 'staff', 'committe', 'society', 'club',
+                  'dcu', 'projects', 'redbrick', 'intersoc', 'guest')
 
 # List of paying USERTYPES.
 #
@@ -176,15 +165,16 @@ CONVERT_PRIMARY_GROUPS = {
     'helpdesk': 'committe'
 }
 
-#---------------------------------------------------------------------#
+# ------------------------------------------------------------------- #
 # MODULE FUNCTIONS                                                    #
-#---------------------------------------------------------------------#
+# ------------------------------------------------------------------- #
 
 
 def gen_passwd():
     """Create a random string and return it for the users password"""
-    return ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits)
-                   for _ in range(12))
+    return ''.join(
+        random.SystemRandom().choice(string.ascii_lowercase + string.digits)
+        for _ in range(12))
 
 
 def gen_homedir(username, usertype):
@@ -218,9 +208,7 @@ def gen_quotas():
 
     """
 
-    return {
-        '/storage': (1000000, 1100000, 800000, 1000000)
-    }
+    return {'/storage': (1000000, 1100000, 800000, 1000000)}
 
 
 def gen_extra_user_files(username):
@@ -229,8 +217,6 @@ def gen_extra_user_files(username):
 
     # fixme: need files for carbon now aswell.
 
-    return (
-        '%s/%s' % (DIR_SIGNAWAY_STATE, username),
-        '/var/mail/%s' % username,
-        '/var/spool/cron/crontabs/%s' % username
-    )
+    return ('%s/%s' % (DIR_SIGNAWAY_STATE,
+                       username), '/var/mail/%s' % username,
+            '/var/spool/cron/crontabs/%s' % username)

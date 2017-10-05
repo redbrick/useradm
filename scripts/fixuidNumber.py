@@ -1,7 +1,9 @@
 #! /usr/bin/env python3
 
 import sys
+
 from ..useradm.rbuserdb import RBUserDB
+
 udb = RBUserDB()
 udb.connect()
 fd, n = udb.uidNumber_getnext()

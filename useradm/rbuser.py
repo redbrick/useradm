@@ -1,19 +1,18 @@
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # MODULE DESCRIPTION                                                          #
-#-----------------------------------------------------------------------------#
-
+# --------------------------------------------------------------------------- #
 """RedBrick User Module; contains RBUser class."""
 
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # DATA                                                                        #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 __version__ = '$Revision: 1.4 $'
 __author__ = 'Cillian Sharkey'
 
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # CLASSES                                                                     #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 
 class RBUser():
@@ -24,49 +23,47 @@ class RBUser():
     #
     attr_list = (
         # Attributes associated with user.
-
-        'uid',                  # Username
-        'usertype',             # fixme NOT IN LDAP: contains primary
-                                # usertype from objectClass list.
-                                # Placed here so it's at start of
-                                # output for user's information.
-        'objectClass',          # List of classes.
-        'newbie',               # New this year (boolean)
-        'cn',                   # Full name
-        'altmail',              # Alternate email
-        'id',                   # DCU ID number (integer)
-        'course',               # DCU course code
-        'year',                 # DCU course year number/code
-        'yearsPaid',            # Number of years paid (integer)
-        'updatedby',            # Username
-        'updated',              # Timestamp
-        'createdby',            # Username
-        'created',              # Timestamp
-        'birthday',             # Date
+        'uid',  # Username
+        'usertype',  # fixme NOT IN LDAP: contains primary
+        # usertype from objectClass list.
+        # Placed here so it's at start of
+        # output for user's information.
+        'objectClass',  # List of classes.
+        'newbie',  # New this year (boolean)
+        'cn',  # Full name
+        'altmail',  # Alternate email
+        'id',  # DCU ID number (integer)
+        'course',  # DCU course code
+        'year',  # DCU course year number/code
+        'yearsPaid',  # Number of years paid (integer)
+        'updatedby',  # Username
+        'updated',  # Timestamp
+        'createdby',  # Username
+        'created',  # Timestamp
+        'birthday',  # Date
 
         # Attributes associated with Unix account.
-
         'uidNumber',
         'gidNumber',
         'gecos',
         'loginShell',
         'homeDirectory',
-        'userPassword',         # Crypted password.
-        'host',                 # List of hosts.
-        'shadowLastChange'      # Last time password was changed.
+        'userPassword',  # Crypted password.
+        'host',  # List of hosts.
+        'shadowLastChange'  # Last time password was changed.
     )
 
     # List of additional user attributes that are NOT in LDAP.
     #
     attr_misc_list = (
-        'passwd',               # Plaintext password
-        'oldusertype',          # Used when converting usertype?
-        'bday',                 # Birthday day
-        'bmonth',               # Birthday month
-        'byear',                # Birthday year
-        'disuser_period',       # at(1) timespec
+        'passwd',  # Plaintext password
+        'oldusertype',  # Used when converting usertype?
+        'bday',  # Birthday day
+        'bmonth',  # Birthday month
+        'byear',  # Birthday year
+        'disuser_period',  # at(1) timespec
         # fixme remove usr.override
-        #'override'             # Boolean
+        # 'override'             # Boolean
     )
 
     # Union of above lists.
@@ -74,39 +71,34 @@ class RBUser():
     attr_list_all = attr_list + attr_misc_list
 
     attr_list_info = (
-        # Attributes associated with user to be used for the useradm info command
-
-        'uid',                  # Username
-        'usertype',             # fixme NOT IN LDAP: contains primary
-                                # usertype from objectClass list.
-                                # Placed here so it's at start of
-                                # output for user's information.
-        'newbie',               # New this year (boolean)
-        'cn',                   # Full name
-        'altmail',              # Alternate email
-        'id',                   # DCU ID number (integer)
-        'course',               # DCU course code
-        'year',                 # DCU course year number/code
-        'yearsPaid',            # Number of years paid (integer)
-        'updatedby',            # Username
-        'updated',              # Timestamp
-        'createdby',            # Username
-        'created',              # Timestamp
-        'birthday',             # Date
+        # Attributes associated with user to be used
+        # for the useradm info command
+        'uid',  # Username
+        'usertype',  # fixme NOT IN LDAP: contains primary
+        # usertype from objectClass list.
+        # Placed here so it's at start of
+        # output for user's information.
+        'newbie',  # New this year (boolean)
+        'cn',  # Full name
+        'altmail',  # Alternate email
+        'id',  # DCU ID number (integer)
+        'course',  # DCU course code
+        'year',  # DCU course year number/code
+        'yearsPaid',  # Number of years paid (integer)
+        'updatedby',  # Username
+        'updated',  # Timestamp
+        'createdby',  # Username
+        'created',  # Timestamp
+        'birthday',  # Date
 
         # Attributes associated with Unix account.
-
         'gecos',
         'loginShell',
-        'homeDirectory',
-    )
+        'homeDirectory', )
 
     # List of attributes that have multiple values (i.e. are lists).
     #
-    attr_list_value = (
-        'objectClass',
-        'host'
-    )
+    attr_list_value = ('objectClass', 'host')
 
     def __init__(self, usr=None, **attrs):
         """Create new RBUser object.
@@ -133,7 +125,8 @@ class RBUser():
         for i in attr:
             space = 18 - len(i)
             if i in self.attr_list_all and self.__dict__[i] is not None:
-                output_string += i + ' ' * space + ':  ' + str(self.__dict__[i]) + '\n'
+                output_string += i + ' ' * space + ':  ' + str(
+                    self.__dict__[i]) + '\n'
             else:
                 output_string += i + ' ' * space + ': ' + ' ----- ' + '\n'
         return output_string

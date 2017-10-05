@@ -1,7 +1,6 @@
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # MODULE DESCRIPTION                                                          #
-#-----------------------------------------------------------------------------#
-
+# --------------------------------------------------------------------------- #
 """RedBrick Registration System CGI."""
 
 # System modules
@@ -10,61 +9,54 @@ import atexit
 import cgi
 import cgitb
 import os
-import time
 import re
 import sys
+import time
 from xml.sax.saxutils import quoteattr
+
 import ldap
-
-# RedBrick modules
-
-from rbuserdb import RBUserDB
-from rbuser import RBUser
+from rberror import RBError, RBFatalError, RBWarningError
 from rbopt import RBOpt
-from rberror import RBError, RBWarningError, RBFatalError
+from rbuser import RBUser
+from rbuserdb import RBUserDB
 
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # DATA                                                                        #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 __version__ = '$Revision: 1.6 $'
 __author__ = 'Cillian Sharkey'
 
 cmds = {
-    'card':     'Card reader interface',
-    'add':      'Add new user',
-    'delete':   'Delete user',
-    'renew':    'Renew user',
-    'update':   'Update user',
-    'rename':   'Rename user',
-    'convert':  'Convert user to new usertype',
-    'show':     'Show user information',
+    'card': 'Card reader interface',
+    'add': 'Add new user',
+    'delete': 'Delete user',
+    'renew': 'Renew user',
+    'update': 'Update user',
+    'rename': 'Rename user',
+    'convert': 'Convert user to new usertype',
+    'show': 'Show user information',
     'freename': 'Check if a username is free',
-    'search':   'Search user and DCU databases',
-    'stats':    'Database statistics',
-    'log':      'Log of all actions'
+    'search': 'Search user and DCU databases',
+    'stats': 'Database statistics',
+    'log': 'Log of all actions'
 }
 
-cmds_list = ('card', 'add', 'delete', 'renew', 'update', 'rename', 'convert', 'show', 'freename',
-             'search', 'stats', 'log')
+cmds_list = ('card', 'add', 'delete', 'renew', 'update', 'rename', 'convert',
+             'show', 'freename', 'search', 'stats', 'log')
 
-cmds_noform = {
-    'stats':    1,
-    'log':      1
-}
+cmds_noform = {'stats': 1, 'log': 1}
 
-cmds_custom = {
-    'show':     1,
-    'search':   1
-}
+cmds_custom = {'show': 1, 'search': 1}
 
 fields = (
-    ('updatedby', 'Updated By', ('card', 'add', 'delete', 'renew', 'update', 'rename', 'convert')),
-    ('cardid', 'DCU card id', ('card',)),
-    ('uid', 'Username', ('card', 'add', 'delete', 'renew', 'update', 'rename', 'convert', 'show',
-                         'search')),
+    ('updatedby', 'Updated By', ('card', 'add', 'delete', 'renew', 'update',
+                                 'rename', 'convert')),
+    ('cardid', 'DCU card id', ('card', )),
+    ('uid', 'Username', ('card', 'add', 'delete', 'renew', 'update', 'rename',
+                         'convert', 'show', 'search')),
     ('newuid', 'New username', ('renew', 'rename', 'freename')),
-    ('newbie', 'New user?', ('update',)),
+    ('newbie', 'New user?', ('update', )),
     ('birthday', 'Birthday', ('add', 'renew', 'update')),
     ('id', 'DCU ID', ('add', 'renew', 'update', 'search')),
     ('usertype', 'Usertype', ('add', 'renew', 'convert')),
@@ -73,10 +65,10 @@ fields = (
     ('course', 'Course Code', ('add', 'renew', 'update')),
     ('year', 'Course Year', ('add', 'renew', 'update')),
     ('yearsPaid', 'Years Paid', ('add', 'renew', 'update')),
-    ('setpasswd', 'Set new password?', ('renew',)),
-    ('override', 'Override errors?', ('card', 'add', 'renew', 'update', 'rename')),
-    ('dummyid', "Use 'dummy' ID?", ('card',)),
-)
+    ('setpasswd', 'Set new password?', ('renew', )),
+    ('override', 'Override errors?', ('card', 'add', 'renew', 'update',
+                                      'rename')),
+    ('dummyid', "Use 'dummy' ID?", ('card', )), )
 
 # Optional side note for form fields. For a particular mode only, use
 # "fieldname.mode".
@@ -96,35 +88,31 @@ fields_note = {
 # dialogs instead of a checkbox, as they allow neither yes nor no to be set
 # (i.e. None).
 #
-fields_yesno = {
-    'setpasswd': 1,
-    'override': 1,
-    'dummyid': 1,
-    'newbie': 1
-}
+fields_yesno = {'setpasswd': 1, 'override': 1, 'dummyid': 1, 'newbie': 1}
 
 # HTML for custom form input fields.
 #
 fields_input = {
-    'cardid':   'class=fixed size=18 maxlength=16',
-    'cn':       'size=30',
-    'altmail':  'size=30',
-    'course':   'size=10 maxlength=50',
-    'year':     'size=10 maxlength=10'
+    'cardid': 'class=fixed size=18 maxlength=16',
+    'cn': 'size=30',
+    'altmail': 'size=30',
+    'course': 'size=10 maxlength=50',
+    'year': 'size=10 maxlength=10'
 }
 
 # Global variables.
 #
 usr = RBUser()
 opt = RBOpt()
-udb = form = None   # Initalised later in main()
+udb = form = None  # Initalised later in main()
 okay = 0
 start_done = end_done = 0
 error_string = notice_string = okay_string = ''
 
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 # MAIN                                                                        #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 def main():
     """Program entry function."""
@@ -149,8 +137,8 @@ def main():
     if opt.mode not in cmds:
         opt.mode = 'card'
     opt.action = form.getfirst('action')
-    #XXX remove usr.override
-    #usr.override = opt.override = form.getfirst('override') == '1'
+    # XXX remove usr.override
+    # usr.override = opt.override = form.getfirst('override') == '1'
     opt.override = form.getfirst('override') == '1'
 
     # Start HTML now only for modes that print output *before* html_form is
@@ -183,12 +171,14 @@ def main():
     html_form()
     sys.exit(0)
 
+
 def shutdown():
     """Cleanup function registered with atexit."""
 
     html_end()
     if udb:
         udb.close()
+
 
 def html_start():
     """Start HTML output."""
@@ -198,8 +188,7 @@ def html_start():
         return
     start_done = 1
 
-    print(\
-"""<html>
+    print("""<html>
 <head>
 <title>RedBrick Registration System v3.0 - %s</title>
 <link rel="stylesheet" href="common.css" type="text/css">
@@ -256,18 +245,18 @@ function check_form (f) {
 <div id=menu>
 <form name=menuform action='rrs.cgi' method=get>""" % opt.mode.capitalize())
     if form.getfirst('updatedby'):
-        print("<input type=hidden name=updatedby value=%s>" % quoteattr(form.getfirst('updatedby')
-                                                                        or ''))
+        print("<input type=hidden name=updatedby value=%s>" % quoteattr(
+            form.getfirst('updatedby') or ''))
     for i in cmds_list:
         print("<input id=button type=submit name=mode value=%s> " % i)
-    print(\
-"""</form>
+    print("""</form>
 </div>
 
 <div id=top>%s</div>
 
 <div id=main>
 """ % cmds[opt.mode])
+
 
 def html_form():
     """Output HTML form for current mode."""
@@ -279,17 +268,21 @@ def html_form():
     if notice_string or error_string or okay_string:
         print("<table align=center id=msgs><tr><td>")
         if error_string:
-            print("<span id=warn>%s</span>" % error_string.replace('\n', '<br>\n'))
+            print("<span id=warn>%s</span>" % error_string.replace(
+                '\n', '<br>\n'))
         if notice_string:
-            print("<span id=notice>%s</span>" % notice_string.replace('\n', '<br>\n'))
+            print("<span id=notice>%s</span>" % notice_string.replace(
+                '\n', '<br>\n'))
         if okay_string:
-            print("<span id=okay>%s</span>" % okay_string.replace('\n', '<br>\n'))
+            print("<span id=okay>%s</span>" % okay_string.replace(
+                '\n', '<br>\n'))
         print("</td></tr></table>")
 
     # Modes that never use a form or don't want a form when action has been
     # requested and successful.
     #
-    if opt.mode in cmds_noform or (opt.mode in cmds_custom and opt.action and okay):
+    if opt.mode in cmds_noform or (opt.mode in cmds_custom and opt.action
+                                   and okay):
         return
 
     if okay:
@@ -306,12 +299,14 @@ def html_form():
         for k in list(form.keys()):
             if hasattr(usr, k) and getattr(usr, k) is None:
                 setattr(usr, k, form.getfirst(k))
-    print(\
-"""<form name=mainform onSubmit="javascript:return check_form(this)" action="rrs.cgi" method=get>
-<input type=hidden name=mode value=%s>
-<input type=hidden name=action value=1>""" % opt.mode)
+    print("""
+        <form name=mainform onSubmit="javascript:return check_form(this)"
+        action="rrs.cgi" method=get>
+        <input type=hidden name=mode value=%s>
+        <input type=hidden name=action value=1>""" % opt.mode)
 
-    print('<table align=center class=main border=0 cellpadding=1 cellspacing=5>')
+    print(
+        '<table align=center class=main border=0 cellpadding=1 cellspacing=5>')
 
     for field, desc, modes in fields:
         if opt.mode not in modes:
@@ -321,10 +316,10 @@ def html_form():
             #
             if field == 'updatedby' and form.getfirst('updatedby'):
                 print('<input type=hidden name=updatedby value=%s>' %
-                        quoteattr(form.getfirst('updatedby') or ''))
+                      quoteattr(form.getfirst('updatedby') or ''))
         else:
             usrval = ''
-            if hasattr(usr, field) and getattr(usr, field) != None:
+            if hasattr(usr, field) and getattr(usr, field) is not None:
                 usrval = getattr(usr, field)
             if field == 'override':
                 usrval = opt.override
@@ -336,9 +331,14 @@ def html_form():
             print('  <td>', end=' ')
 
             if field in fields_input:
-                print('<input %s name=%s value=%s>' % (fields_input[field], field, quoteattr(str(usrval))))
+                print('<input %s name=%s value=%s>' %
+                      (fields_input[field], field, quoteattr(str(usrval))))
             elif field in fields_yesno:
-                print('<input name=%s type=radio value=1%s> Yes <input name=%s type=radio value=0%s> No' % (field, usrval == 1 and ' checked' or '', field, usrval == 0 and ' checked' or ''))
+                print('''
+                <input name=%s type=radio value=1%s> Yes <input
+                name=%s type=radio value=0%s> No
+                ''' % (field, usrval == 1 and ' checked' or '', field,
+                       usrval == 0 and ' checked' or ''))
             elif field == 'usertype':
                 # Show default usertype of member if none set.
                 if not usr.usertype:
@@ -358,10 +358,18 @@ def html_form():
                         usr.bday = res.group(3)
                         usr.bmonth = res.group(2)
                         usr.byear = res.group(1)
-                print("<input size=2 maxlength=2 name=bday value='%s'>-<input size=2 maxlength=2 name=bmonth value='%s'>-<input size=4 maxlength=4 name=byear value='%s'>" % (usr.bday or '', usr.bmonth or '', usr.byear or ''))
+                print('''
+                    <input size=2 maxlength=2 name=bday value='%s'>-<input
+                    size=2 maxlength=2 name=bmonth value='%s'>-<input size=4
+                    maxlength=4 name=byear value='%s'>
+                    ''' % (usr.bday or '', usr.bmonth or '', usr.byear or ''))
             else:
-                print("<input class=fixed size=10 maxlength=8 name=%s value=%s" % (field, quoteattr(str(usrval))), end=' ')
-                if field == 'uid' and usr.uid and opt.mode in ('renew', 'update'):
+                print(
+                    "<input class=fixed size=10 maxlength=8 name=%s value=%s" %
+                    (field, quoteattr(str(usrval))),
+                    end=' ')
+                if field == 'uid' and usr.uid and opt.mode in ('renew',
+                                                               'update'):
                     print(' readonly', end=' ')
                 print('>')
 
@@ -377,6 +385,7 @@ def html_form():
 <p><input id=button type=submit value='%s &gt;&gt;'></p>
 </form>""" % opt.mode.capitalize())
 
+
 def html_end():
     """Finish HTML output."""
 
@@ -389,9 +398,11 @@ def html_end():
 </body>
 </html>""")
 
-#-----------------------------------------------------------------------------#
+
+# --------------------------------------------------------------------------- #
 # MAIN FUNCTIONS                                                              #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 def card():
     """Process input from card reader form. Mode will be switched to add or
@@ -403,7 +414,7 @@ def card():
 
     # We have an ID, is it a newbie or a renewal?
     #
-    if usr.id != None:
+    if usr.id is not None:
         try:
             udb.check_user_byid(usr.id)
         except RBError:
@@ -430,16 +441,17 @@ def card():
         raise RBFatalError("DCU Card ID, username or dummy ID must be given")
 
     if newmode == 'add':
-        if usr.id != None:
+        if usr.id is not None:
             udb.get_userinfo_new(usr)
         udb.get_userdefaults_new(usr)
     elif newmode == 'renew':
         curusr = RBUser()
-        udb.get_userinfo_renew(usr, curusr, override = 1)
+        udb.get_userinfo_renew(usr, curusr, override=1)
         udb.check_unpaid(curusr)
         udb.get_userdefaults_renew(usr)
     if newmode:
         opt.mode = newmode
+
 
 def add():
     """Add a new user."""
@@ -469,11 +481,14 @@ def add():
     # operation, log it and switch back to card mode.
     #
     okay = 1
-    okay_string += 'OKAY: User added: %s %s (%s)' % (usr.usertype, usr.uid, usr.cn)
+    okay_string += 'OKAY: User added: %s %s (%s)' % (usr.usertype, usr.uid,
+                                                     usr.cn)
     rrs_log_add('add:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
-                (usr.uid, usr.usertype, usr.id != None and usr.id or '', usr.cn, usr.course or '',
-                 usr.year or '', usr.altmail, usr.birthday or '', usr.yearsPaid))
+                (usr.uid, usr.usertype, usr.id is not None and usr.id or '',
+                 usr.cn, usr.course or '', usr.year or '', usr.altmail,
+                 usr.birthday or '', usr.yearsPaid))
     opt.mode = 'card'
+
 
 def delete():
     """Delete user."""
@@ -488,6 +503,7 @@ def delete():
     okay = 1
     okay_string += 'OKAY: User deleted: %s\n' % usr.uid
     rrs_log_add('delete:%s' % (usr.uid))
+
 
 def renew():
     """Renew user."""
@@ -519,11 +535,13 @@ def renew():
 
     udb.renew(usr)
 
-    okay_string += 'OKAY: User renewed: %s %s%s\n' % (usr.oldusertype, usr.uid, opt.setpasswd and
-                                                      ' [new password set]' or '')
+    okay_string += 'OKAY: User renewed: %s %s%s\n' % (
+        usr.oldusertype, usr.uid,
+        opt.setpasswd and ' [new password set]' or '')
     rrs_log_add('renew:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
-                (usr.uid, newusr.uid or '', opt.setpasswd and 1 or 0, usr.usertype, usr.id != None
-                 and usr.id or '', usr.cn, usr.course or '', usr.year != None and usr.year or '',
+                (usr.uid, newusr.uid or '', opt.setpasswd and 1 or 0,
+                 usr.usertype, usr.id is not None and usr.id or '', usr.cn,
+                 usr.course or '', usr.year is not None and usr.year or '',
                  usr.altmail, usr.birthday or '', usr.yearsPaid))
 
     # NOTE: We don't actually generate/set a password here, just flag it in
@@ -536,7 +554,8 @@ def renew():
     #
     if usr.oldusertype != usr.usertype:
         udb.convert(curusr, usr)
-        okay_string += 'OKAY: User converted: %s -> %s\n' % (usr.uid, usr.usertype)
+        okay_string += 'OKAY: User converted: %s -> %s\n' % (usr.uid,
+                                                             usr.usertype)
         rrs_log_add('convert:%s:%s' % (usr.uid, usr.usertype))
 
     # NOTE: If new username is given, rename database entry and log it.
@@ -547,10 +566,12 @@ def renew():
     if newusr.uid:
         udb.rename(usr, newusr)
         okay_string += 'OKAY: User renamed: %s -> %s\n' % (usr.uid, newusr.uid)
-        rrs_log_add('rename-%s:%s:%s' % (usr.newbie and 'new' or 'existing', usr.uid, newusr.uid))
+        rrs_log_add('rename-%s:%s:%s' % (usr.newbie and 'new' or 'existing',
+                                         usr.uid, newusr.uid))
 
     okay = 1
     opt.mode = 'card'
+
 
 def update():
     """Update user."""
@@ -573,7 +594,12 @@ def update():
 
     okay = 1
     okay_string += 'OKAY: User updated: %s\n' % usr.uid
-    rrs_log_add('update:%s:%s:%s:%s:%s:%s:%s:%s:%s' % (usr.uid, usr.newbie and 1 or 0, usr.id != None and usr.id or '', usr.cn, usr.course or '', usr.year != None and usr.year or '', usr.altmail, usr.birthday or '', usr.yearsPaid))
+    rrs_log_add('update:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
+                (usr.uid, usr.newbie and 1 or 0,
+                 usr.id is not None and usr.id or '', usr.cn, usr.course or '',
+                 usr.year is not None and usr.year or '', usr.altmail,
+                 usr.birthday or '', usr.yearsPaid))
+
 
 def rename():
     """Rename user."""
@@ -590,13 +616,15 @@ def rename():
 
     okay = 1
     okay_string += 'OKAY: User renamed: %s -> %s\n' % (usr.uid, newusr.uid)
-    rrs_log_add('rename-%s:%s:%s' % (usr.newbie and 'new' or 'existing', usr.uid, newusr.uid))
+    rrs_log_add('rename-%s:%s:%s' % (usr.newbie and 'new' or 'existing',
+                                     usr.uid, newusr.uid))
+
 
 def convert():
     """Convert user."""
 
     global okay, okay_string
-    
+
     newusr = RBUser()
     get_updatedby(usr)
     get_username(usr)
@@ -605,12 +633,14 @@ def convert():
     udb.convert(usr, newusr)
 
     okay = 1
-    okay_string += 'OKAY: User converted: %s -> %s\n' % (usr.uid, newusr.usertype)
+    okay_string += 'OKAY: User converted: %s -> %s\n' % (usr.uid,
+                                                         newusr.usertype)
     rrs_log_add('convert:%s:%s' % (usr.uid, newusr.usertype))
+
 
 def show():
     """Show user's details."""
-    
+
     global okay
 
     get_username(usr)
@@ -620,62 +650,102 @@ def show():
     print('</pre>')
     okay = 1
 
+
 def freename():
     """Check if a username is free."""
-    
+
     global okay_string
-    
+
     get_newusername(usr)
     if usr.uid:
         okay_string += "OKAY: Username '%s' is free.\n" % usr.uid
 
+
 def search():
     """Search user and/or DCU databases."""
-    
+
     global okay
 
     if form.getfirst('uid'):
         uid = form.getfirst('uid')
         res = udb.search_users_byusername(uid)
-        print("<p align=center>User database search for username '%s' - %d match%s</p>" % (uid, len(res), len(res) != 1 and 'es' or ''))
+        print('''<p align=center
+            >User database search for username '%s' - %d match%s</p>
+            ''' % (uid, len(res), len(res) != 1 and 'es' or ''))
         show_search_results(res)
         okay = 1
     elif 'id' in form or 'cn' in form:
         id = form.getfirst('id')
         cn = form.getfirst('cn')
-        if id != None:
+        if id is not None:
             res = udb.search_users_byid(id)
-            print("<p align=center>User database search for ID '%s' - %d match%s</p>" % (id, len(res), len(res) != 1 and 'es' or ''))
+            print('''<p align=center
+                >User database search for ID '%s' - %d match%s</p>
+                ''' % (id, len(res), len(res) != 1 and 'es' or ''))
         else:
             res = udb.search_users_byname(cn)
-            print("<p align=center>User database search for name '%s' - %d match%s</p>" % (cn, len(res), len(res) != 1 and 'es' or ''))
+            print('''<p align=center
+                >User database search for name '%s' - %d match%s</p>
+                ''' % (cn, len(res), len(res) != 1 and 'es' or ''))
 
         show_search_results(res)
 
-        if id != None:
+        if id is not None:
             res = udb.search_dcu_byid(id)
-            print("<p align=center>DCU database search for ID '%s' - %d match%s</p>" % (id, len(res), len(res) != 1 and 'es' or ''))
+            print('''<p align=center
+                >DCU database search for ID '%s' - %d match%s</p>
+                ''' % (id, len(res), len(res) != 1 and 'es' or ''))
         else:
             res = udb.search_dcu_byname(cn)
-            print("<p align=center>DCU database search for name '%s' - %d match%s</p>" % (cn, len(res), len(res) != 1 and 'es' or ''))
-        
+            print('''<p align=center
+                >DCU database search for name '%s' - %d match%s</p>
+                ''' % (cn, len(res), len(res) != 1 and 'es' or ''))
+
         show_search_results(res)
         okay = 1
     else:
         raise RBFatalError('No search term given!')
+
 
 def show_search_results(res):
     """Actual routine to display search results."""
 
     if res:
         print('<table align=center class=search>')
-        print('<tr><td></td><td class=top>Username</td><td class=top>Usertype</td><td class=top>Id</td><td class=top>Name</td><td class=top>Course</td><td class=top>Year</td><td class=top>Email</td></tr>')
+        print('''
+            <tr><td></td>
+            <td class=top>Username</td>
+            <td class=top>Usertype</td>
+            <td class=top>Id</td>
+            <td class=top>Name</td>
+            <td class=top>Course</td>
+            <td class=top>Year</td>
+            <td class=top>Email</td></tr>''')
         for uid, usertype, id, cn, course, year, altmail in res:
             print('<tr><td class=button>', end=' ')
             if uid:
-                print('<form action=rrs.cgi method=get><input type=hidden name=updatedby value=%s><input type=hidden name=uid value=%s><input type=hidden name=action value=1><input id=button type=submit name=mode value=show></form>' % (quoteattr(form.getfirst('updatedby') or ''), uid), end=' ')
-            print('</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (uid or '-', usertype or '-', id or '-', cn, course or '-', year or '-', altmail))
+                print(
+                    '''
+                    <form action=rrs.cgi method=get>
+                    <input type=hidden name=updatedby value=%s>
+                    <input type=hidden name=uid value=%s>
+                    <input type=hidden name=action value=1>
+                    <input id=button type=submit name=mode value=show>
+                    </form>
+                    ''' % (quoteattr(form.getfirst('updatedby') or ''), uid),
+                    end=' ')
+            print('''</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                </tr>''' % (uid or '-', usertype or '-', id or '-', cn,
+                            course or '-', year or '-', altmail))
         print('</table>')
+
 
 def stats():
     """Show database statistics."""
@@ -684,14 +754,15 @@ def stats():
     udb.stats()
     print("</pre>")
 
+
 def log():
     """Show contents of rrs log file."""
-    
+
     try:
         fd = open('rrs.log', 'r')
     except IOError as e:
         error(e, 'Could not open rrs.log')
-    
+
     print('<pre>\n')
     if os.path.getsize('rrs.log') == 0:
         print('Logfile is empty.')
@@ -701,9 +772,11 @@ def log():
     print('</pre>')
     fd.close()
 
-#-----------------------------------------------------------------------------#
+
+# --------------------------------------------------------------------------- #
 # GET USER DATA FUNCTIONS                                                     #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 def get_username(usr):
     """Get an existing username."""
@@ -715,6 +788,7 @@ def get_username(usr):
 
     udb.check_username(usr.uid)
     udb.check_user_byname(usr.uid)
+
 
 def get_newusername(usr):
     """Get a new (free) username."""
@@ -741,9 +815,10 @@ def get_newusername(usr):
     except RBWarningError as e:
         error(e)
 
+
 def get_cardid(usr):
     """Set usr.id to DCU ID number in cardid field.
-    
+
     The ID will either be the 8 digit number when entered manually or the
     13 digit code produced by barcode and magnetic readers of the form
     xxIDNUMBERnnn with possible start and/or end sentinel characters such
@@ -755,11 +830,11 @@ def get_cardid(usr):
 
     NOTE: It is up to the caller to check if usr.id has been set,
     get_cardid does not require it to be set.
-    
+
     """
 
     usr.id = form.getfirst('cardid')
-    if usr.id != None:
+    if usr.id is not None:
         res = re.search(r'\d{2}(\d{8})\d{3}\D*$', usr.id)
         if res:
             usr.id = int(res.group(1))
@@ -769,6 +844,7 @@ def get_cardid(usr):
             usr.id = int(usr.id)
             return
         raise RBFatalError('Invalid ID number/card reader input')
+
 
 def get_updatedby(usr):
     """Get username of who is performing the action."""
@@ -782,6 +858,7 @@ def get_updatedby(usr):
 
     udb.check_updatedby(usr.updatedby)
 
+
 def get_usertype(usr):
     """Get usertype."""
 
@@ -794,9 +871,10 @@ def get_usertype(usr):
 
     udb.check_usertype(usr.usertype)
 
+
 def get_id(usr):
     """Get DCU ID."""
-    
+
     if usr.usertype in rbconfig.usertypes_dcu:
         if form.getfirst('id'):
             usr.id = int(form.getfirst('id'))
@@ -805,14 +883,16 @@ def get_id(usr):
 
         udb.check_id(usr)
 
+
 def get_dummyid(usr):
     """Get 'dummy' DCU ID."""
 
     if form.getfirst('dummyid'):
         udb.get_dummyid(usr)
-        #XXX remove usr.override
-        #usr.override = opt.override = 1
+        # XXX remove usr.override
+        # usr.override = opt.override = 1
         opt.override = 1
+
 
 def get_name(usr):
     """Get name."""
@@ -824,10 +904,11 @@ def get_name(usr):
 
     udb.check_name(usr)
 
+
 def get_years_paid(usr):
     """Get years paid."""
 
-    if not usr.usertype in rbconfig.usertypes_paying:
+    if usr.usertype not in rbconfig.usertypes_paying:
         return
     if form.getfirst('yearsPaid'):
         usr.yearsPaid = int(form.getfirst('yearsPaid'))
@@ -836,25 +917,28 @@ def get_years_paid(usr):
 
     udb.check_years_paid(usr)
 
+
 def get_course(usr):
     """Get DCU course."""
 
-    if not usr.usertype in ('member', 'committe'):
+    if usr.usertype not in ('member', 'committe'):
         return
     if form.getfirst('course'):
         usr.course = form.getfirst('course')
     else:
         raise RBFatalError('Course must be given')
 
+
 def get_year(usr):
     """Get DCU year."""
 
-    if not usr.usertype in ('member', 'committe'):
+    if usr.usertype not in ('member', 'committe'):
         return
     if form.getfirst('year'):
         usr.year = form.getfirst('year')
     else:
         raise RBFatalError('Year must be given')
+
 
 def get_email(usr):
     """Get alternative email address."""
@@ -868,41 +952,51 @@ def get_email(usr):
     except RBWarningError as e:
         error(e)
 
+
 def get_birthday(usr):
     """Get (optional) birthday."""
 
-    if form.getfirst('byear') or form.getfirst('bmonth') or form.getfirst('bday'):
-        if not (form.getfirst('byear') and form.getfirst('bmonth') and form.getfirst('bday')):
+    if form.getfirst('byear') or form.getfirst('bmonth') or form.getfirst(
+            'bday'):
+        if not (form.getfirst('byear') and form.getfirst('bmonth')
+                and form.getfirst('bday')):
             raise RBFatalError('Incomplete birthday given')
         try:
-            usr.birthday = '%.4d-%0.2d-%0.2d' % (int(form.getfirst('byear')), int(form.getfirst('bmonth')), int(form.getfirst('bday')))
+            usr.birthday = '%.4d-%0.2d-%0.2d' % (int(form.getfirst('byear')),
+                                                 int(form.getfirst('bmonth')),
+                                                 int(form.getfirst('bday')))
         except ValueError:
             raise RBFatalError('Invalid birthday given')
-        
+
         udb.check_birthday(usr)
+
 
 def get_setpasswd(usr):
     """Get set new password boolean."""
 
-    if form.getfirst('setpasswd') != None:
+    if form.getfirst('setpasswd') is not None:
         opt.setpasswd = form.getfirst('setpasswd') == '1'
+
 
 def get_newbie(usr):
     """Get newbie boolean."""
 
-    if form.getfirst('newbie') != None:
+    if form.getfirst('newbie') is not None:
         usr.newbie = form.getfirst('newbie') == '1'
 
-#-----------------------------------------------------------------------------#
+
+# --------------------------------------------------------------------------- #
 # LOGFILE HANDLING                                                            #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 def rrs_log_add(msg):
     """Add an entry for the current command to the logfile."""
 
     if not msg:
         msg = "%s:EMPTY MESSAGE" % opt.mode
-    msg = "%s:%s:%s" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), usr.updatedby, msg)
+    msg = "%s:%s:%s" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                        usr.updatedby, msg)
     try:
         fd = open('rrs.log', 'a')
     except IOError as err:
@@ -910,9 +1004,11 @@ def rrs_log_add(msg):
     print(msg, file=fd)
     fd.close()
 
-#-----------------------------------------------------------------------------#
+
+# --------------------------------------------------------------------------- #
 # ERROR HANDLING                                                              #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
+
 
 def error(err, mesg=''):
     """Handle (mainly) RBError exceptions."""
@@ -936,9 +1032,10 @@ def error(err, mesg=''):
     html_form()
     sys.exit(1)
 
-#-----------------------------------------------------------------------------#
+
+# --------------------------------------------------------------------------- #
 # If module is called as script, run main()                                   #
-#-----------------------------------------------------------------------------#
+# --------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
     main()

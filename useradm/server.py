@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test server for rrs cgi running on port 8000"""
 
-import http.server
 import cgitb
+import http.server
 
 cgitb.enable()  # This line enables CGI error reporting
 

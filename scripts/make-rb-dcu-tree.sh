@@ -6,14 +6,13 @@ TREES="students staff alumni"
 OUTPUT=rb-dcu-tree.ldif
 
 for i in $TREES; do
-	echo "Getting $i..."
-	ldapsearch -LLL -x -h $HOST -b ou=$i,o=dcu objectClass=person $ATTRS > $i
+  echo "Getting $i..."
+  ldapsearch -LLL -x -h $HOST -b ou="$i",o=dcu objectClass=person "$ATTRS" > "$i"
 done
 
 echo "Generating $OUTPUT"
 
-(
-cat << EOF
+(cat << EOF
 dn: ou=dcu,o=redbrick
 ou: dcu
 objectClass: organizationalUnit
@@ -39,4 +38,4 @@ objectClass: top
 structuralObjectClass: organizationalUnit
 
 EOF
-cat $TREES | ./fixup-rb-dcu-tree.py ) > $OUTPUT
+./fixup-rb-dcu-tree.py < "$TREES") > $OUTPUT
