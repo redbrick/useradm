@@ -115,10 +115,10 @@ The following additional 3rd party Python modules must be installed:
 * `PyGresSQL` - Python interface to PostgresSQL database. Note that this is
   actually included in the PostgresSQL database release, however ensure that
 	version 3.2 or later is installed.
-* `Python-LDAP` - a Python interface to LDAP. Requires OpenLDAP to be installed.
-  Tested with Python-LDAP version 1.10alpha3 and OpenLDAP 1.2.13. This module is
-	currently only used by rebuild_userdb_student and the rebuild_userdb_staff
-	scripts.
+* `pyldap` - a Python interface to LDAP, and a fork of python-ldap.
+   OpenLDAP > 2.4 is required.
+   This module is currently only used by rebuild_userdb_student and the 
+   rebuild_userdb_staff scripts.
 
 #### Requirements for main setup
 
