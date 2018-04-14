@@ -1,3 +1,6 @@
+## !DEPRECATION WARNING!
+### This tool has become more trouble than it's worth to continually work on. Useradm remains in production in its current state for the time being, but will eventually be superceded by redbrick/rb-ldap. Please contact elected-admins@redbrick.dcu.ie with any questions.
+
 # Useradm
 
 [![CircleCI](https://circleci.com/gh/redbrick/useradm.svg?style=shield)](https://circleci.com/gh/redbrick/useradm)
