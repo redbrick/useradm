@@ -1,5 +1,5 @@
-## !DEPRECATION WARNING!
-### This tool has become more trouble than it's worth to continually work on. Useradm remains in production in its current state for the time being, but will eventually be superceded by redbrick/rb-ldap. Please contact elected-admins@redbrick.dcu.ie with any questions.
+## This tool is under heavy construction
+### There is no guarantee it is working but work is commencing on it
 
 # Useradm
 

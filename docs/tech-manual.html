@@ -1,125 +1,98 @@
-<html>
-<head>
-<title>Technical Manual: RedBrick Registration System</title>
-<link rel="stylesheet" href="doc.css" type="text/css">
-</head>
-<body>
+# Technical Manual: RedBrick Registration System
 
-<h1>Technical Manual:<br>RedBrick Registration System</h1>
+*Cillian Sharkey, CASE3, 50716197*
 
-<p><i>Cillian Sharkey, CASE3, 50716197</i></p>
+1. Overview of project
+    * Background
+    * Users
+    * Features
+    * Constraints
+2. System architecture
+    * Clients
+    * Middle end
+    * Back end
+3. User data
+    * users
+    * usertypes
+    * students
+    * staff
+    * reserved
+4. Software and Hardware Boundaries
+5. References
 
-<ol>
-	<li><a href="#overview">Overview of project</a>
-	<ol>
-		<li><a href="#background">Background</a>
-		<li><a href="#users">Users</a>
-		<li><a href="#features">Features</a>
-		<li><a href="#constraints">Constraints</a>
-	</ol>
-	<li><a href="#arch">System architecture</a>
-	<ol>
-		<li><a href="#clients">Clients</a>
-		<li><a href="#middle">Middle end</a>
-		<li><a href="#back">Back end</a>
-	</ol>
-	<li><a href="#data">User data</a>
-	<ol>
-		<li><a href="#sql-users">users</a>
-		<li><a href="#usertypes">usertypes</a>
-		<li><a href="#students">students</a>
-		<li><a href="#staff">staff</a>
-		<li><a href="#reserved">reserved</a>
-	</ol>
-	<li><a href="#boundary">Software and Hardware Boundaries</a>
-	<li><a href="#refs">References</a>
-</ol>
+## Overview of project
 
-<a name=overview></a><h2>Overview of project</h2>
+### Background
 
-<a name=background></a><h3>Background</h3>
-
-<p>There are just over 1,800 accounts on the RedBrick UNIX system and so the
+There are just over 1,800 accounts on the RedBrick UNIX system and so the
 administration of user accounts forms a large part of the system
 administrators' workload. As one of the system administrators for RedBrick
 myself, I have first hand experience of the amount of work required in
 administrating user accounts and dealing with account requests on an often
-daily basis. In addition to this, each year at the clubs &amp; societies day
+daily basis. In addition to this, each year at the clubs & societies day
 the registration of new and renewal of existing users takes place. Hundreds
 of users are processed on a small isolated network of computers. The goal of
 this project is to reduce the workload of system administrators and ease the
 administration and registration of users both on a daily basis and for the annual
-clubs and societies day.</p>
+clubs and societies day.
 
-<a name=users></a><h3>Users</h3>
+### Users
 
-<p>The users of the system will be restricted to the system administrators
+The users of the system will be restricted to the system administrators
 for day to day user administration as it requires root (superuser) access, however
-for registration on clubs &amp; societies day it is usual for other members of the
-society committee to help out.</p>
+for registration on clubs & societies day it is usual for other members of the
+society committee to help out.
 
-<a name=features></a><h3>Features</h3>
+### Features
 
-<ul>
-
-	<li><p>The entire system is written in Python, whose website describes
-	it as:</p>
+	* The entire system is written in Python, whose website describes
+	it as:
 	
-	<blockquote>
-		<p>"Python is an interpreted, interactive, object-oriented
-		programming language. It is often compared to Tcl, Perl, Scheme
-		or Java. Python combines remarkable power with very clear
-		syntax. It has modules, classes, exceptions, very high level
-		dynamic data types, and dynamic typing. The Python
-		implementation is portable: it runs on many brands of UNIX, on
-		Windows, DOS, OS/2, Mac, Amiga... "</p>
-	</blockquote>
+> "Python is an interpreted, interactive, object-oriented
+> programming language. It is often compared to Tcl, Perl, Scheme
+> or Java. Python combines remarkable power with very clear
+> syntax. It has modules, classes, exceptions, very high level
+> dynamic data types, and dynamic typing. The Python
+> implementation is portable: it runs on many brands of UNIX, on
+> Windows, DOS, OS/2, Mac, Amiga... "
 	
-	<li><p>Provides a flexible, automated and consistent (UNIX command
-	line) interface (<code>useradm</code>) for performing both common
+	* Provides a flexible, automated and consistent (UNIX command
+	line) interface (`useradm`) for performing both common
 	day-to-day and occassional "batch" user administration operations on
 	the actual accounts (home directories, mail spools, disk quotas etc.),
-	the UNIX <code>/etc/passwd</code> "database" and the user database
+	the UNIX `/etc/passwd` "database" and the user database
 	ensuring that all are kept in sync. The following functions are
-	provided:</p>
+	provided:
 
-	<ul>
-		<li>adding new accounts,
-		<li>deleting existing accounts,
-		<li>renaming existing accounts,
-		<li>converting existing accounts "usertype",
-		<li>renewing existing accounts,
-		<li>reseting accounts with new random password (and emailing password
-		to user)
-		<li>reseting accounts with disabled Unix shells,
-		<li>retrieving account information for display,
-		<li>checking the availability of usernames for new accounts,
-	</ul>
+		* adding new accounts,
+		* deleting existing accounts,
+		* renaming existing accounts,
+		* converting existing accounts "usertype",
+		* renewing existing accounts,
+		* reseting accounts with new random password (and emailing password to user)
+		* reseting accounts with disabled Unix shells,
+		* retrieving account information for display,
+		* checking the availability of usernames for new accounts,
 
-	<p>Batch account operations include:</p>
+	Batch account operations include:
 
-	<ul>
-		<li>emailing renewal reminders to non-renewed accounts
-		<li>expiring non-renewed accounts (i.e. disabling login shell)
-		<li>deleting non-renewed accounts after a grace period
-		<li>checking for inconsistencies between the user database and the
-		UNIX <code>/etc/passwd</code> database
-		<li>interactive update of the user database from the latest copy of
-		the public DCU student database
-	</ul>
+		* emailing renewal reminders to non-renewed accounts
+		* expiring non-renewed accounts (i.e. disabling login shell)
+		* deleting non-renewed accounts after a grace period
+		* checking for inconsistencies between the user database and the UNIX `/etc/passwd` database
+		* interactive update of the user database from the latest copy of the public DCU student database
 
-	<p>Other information available:</p>
+	Other information available:
 
-	<ul>
-		<li>searching user and DCU databases,
-		<li>database and account statistics
-	</ul>
+		* searching user and DCU databases,
+		* database and account statistics
 	
-	<p>The following is the output for the command usage help from
-	<code>useradm</code> when given the '-h' option which lists all
-	the names of the functions the script performs.</p>
+	The following is the output for the command usage help from
+	`useradm` when given the '-h' option which lists all
+	the names of the functions the script performs.
 
-<pre>Usage: useradm command [options]
+```
+Usage: useradm command [options]
 Single user commands:
   add                  Add new user
   delete               Delete user
@@ -155,157 +128,141 @@ Batch information commands:
 Miscellaneous commands:
   checkdb              Check database for inconsistencies
   stats                Show database and account statistics
-'useradm command -h' for more info on a command's options &amp; usage.</pre>
+'useradm command -h' for more info on a command's options &amp; usage.
+```
 
-	<li><p>Provides a web interface (<code>rrs</code>) to offer a similar
+	* Provides a web interface (`rrs`) to offer a similar
 	set of single user administration operations for use on the clubs &amp;
 	societies day. While not as fully featured or as flexible as
-	<code>useradm</code>, the interface is designed primarily for speed and
-	efficiency.</p>
+	`useradm`, the interface is designed primarily for speed and
+	efficiency.
 	
-	<p>To achieve this, user input fields are automatically focused on page
+	To achieve this, user input fields are automatically focused on page
 	load (using Javascript) to save using the keyboard or mouse to select
 	the input box; input from barcode scanners or magnetic strip
 	readers (for use with DCU staff and student cards) is accepted which
 	considerably speeds up the process and eliminates the potential for
-	human error.</p>
+	human error.
 	
-	<p>The setup is generally that of a small number of networked computers
+	The setup is generally that of a small number of networked computers
 	that are isolated from the RedBrick servers so changes would be made to
 	a local (seperate) copy of the user database and at the end of the day
 	all of these changes (i.e. new, renewed, renamed, converted, etc.
 	accounts) must be detected and	synchronised with the actual accounts
-	and UNIX <code>/etc/passwd</code> database on the system. This needs to
+	and UNIX `/etc/passwd` database on the system. This needs to
 	be done in batch as hundreds of accounts are processed on clubs &amp;
-	societies day. This is implemented as the <a
-	href=useradm.html#-sync>sync</a> command in
-	<code>useradm</code>. Features which <code>rrs</code> provides:</p>
+	societies day. This is implemented as the sync command in
+	`useradm`. Features which `rrs` provides:
 	
-	<ul>
-		<li>adding new users,
-		<li>deleting existing users,
-		<li>renaming existing users,
-		<li>converting existing users "usertype",
-		<li>renewing existing users,
-		<li>retrieving user information for display,
-		<li>checking the availability of usernames for new users,
-		<li>searching user and DCU databases,
-		<li>database statistics,
-		<li>a detailed log of all actions performed,
-	</ul>
+		* adding new users,
+		* deleting existing users,
+		* renaming existing users,
+		* converting existing users "usertype",
+		* renewing existing users,
+		* retrieving user information for display,
+		* checking the availability of usernames for new users,
+		* searching user and DCU databases,
+		* database statistics,
+		* a detailed log of all actions performed,
 
-	<li>Prevent username conflicts with other namespaces on the system e.g.
+	* Prevent username conflicts with other namespaces on the system e.g.
 	email aliases, mailing lists, DNS entries for the redbrick.dcu.ie and
-	other domains the society host. Achieved through the use of the <a
-	href=#reserved>reserved</a> table.
+	other domains the society host. Achieved through the use of the reserved table.
 
-</ul>
+### Constraints
 
-<a name=constraints></a><h3>Constraints</h3>
 
-<ul>
-
-	<li>All accounts must have a name (or description) and an alternate
+	* All accounts must have a name (or description) and an alternate
 	email address for contact purposes (and as such all UNIX accounts must
 	have a corresponding entry in the user database).
 
-	<li>Users may only have one account on the system (i.e. one student ID
+	* Users may only have one account on the system (i.e. one student ID
 	per account).
 	
-	<li>Member, staff and associate accounts should have a valid DCU
+	* Member, staff and associate accounts should have a valid DCU
 	student/staff ID associated with them.
 
-	<li>Usernames are limited to what the underlying UNIX OS supports, i.e.
+	* Usernames are limited to what the underlying UNIX OS supports, i.e.
 	maximum length of 8 characters, small set of available characters (a-z,
 	0-9, '-', '_', '.'), etc.
 
-</ul>
+## System architecture
 
-<a name=arch></a><h2>System architecture</h2>
+The system is 3 tier in nature:
 
-<p>The system is 3 tier in nature:</p>
+### Clients
 
-<a name=clients></a><h3>Clients</h3>
+There are two client applications:
 
-<p>There are two client applications:</p>
-
-<ul>
-	<li><a href=rrs.html>rrs:</a> a CGI web interface (primarily for use on
+	* rrs: a CGI web interface (primarily for use on
 	the annual clubs &amp; societies day to register new members and renew
 	existing members)
-	<li><a href=useradm.html>useradm:</a> a UNIX command line interface for
+	* useradm: a UNIX command line interface for
 	day-to-day user administration.
-</ul>
 
-<p>Additional maintenance scripts:</p>
+Additional maintenance scripts:
 
-<ul>
-	<li><a href=rebuild_userdb_reserved.html>rebuild_userdb_reserved</a> -
+	* rebuild_userdb_reserved -
 	rebuilds reserved table
-	<li><a href=rebuild_userdb_staff.html>rebuild_userdb_staff</a> - rebuilds
+	* rebuild_userdb_staff - rebuilds
 	staff table
-	<li><a href=rebuild_userdb_students.html>rebuild_userdb_students</a> -
+	* rebuild_userdb_students -
 	rebuilds students table
-	<li>dump_userdb.sh - Unix shell script to backup entire user database
+	* dump_userdb.sh - Unix shell script to backup entire user database
 	and provide local text copies for quick perusal with standard Unix
 	tools such as grep, etc.
-</ul>
 
-<a name=middle></a><h3>Middle end</h3>
+### Middle end
 
-<p>There are two main modules and a number of supporting modules which the two
-client applications (and any potential future applications) use. These are:</p>
+There are two main modules and a number of supporting modules which the two
+client applications (and any potential future applications) use. These are:
 
-<ul>
-	<li><a href=rbuserdb.html>rbuserdb:</a> performs all database operations
-	<li><a href=rbaccount.html>rbaccount:</a> performs all local UNIX
+	* rbuserdb: performs all database operations
+	* rbaccount: performs all local UNIX
 	account operations
-	<li><a href=rberror.html>rberror:</a> contains custom exception classes
+	* rberror: contains custom exception classes
 	(RBError, RBFatalError, RBWarningError) for our own types of errors
-	<li><a href="rbuser.html">rbuser:</a> contains RBUser class for
+	* rbuser: contains RBUser class for
 	representing a user
-	<li><a href="rbopt.html">rbopt:</a> contains RBOpt class for storing
+	* rbopt: contains RBOpt class for storing
 	user options and sharing between the various modules
-</ul>
 
-<p>Note that the web interface does not make use of the rbaccount module however,
-as it operates on the database only.</p>
+Note that the web interface does not make use of the rbaccount module however,
+as it operates on the database only.
 
-<a name=back></a><h3>Back end</h3>
+### Back end
 
-<p>A PostgresSQL database contains the following tables:</p>
+A PostgresSQL database contains the following tables:
 
-<ul>
-	<li><a href=#users>users</a> - the current user table
+	* users - the current user table
 
-	<li>users&lt;YEAR&gt; - the user table(s) for previous years. These are
+	* users&lt;YEAR&gt; - the user table(s) for previous years. These are
 	kept for reference and archival purposes only and are not actively used.
 
-	<li><a href=#usertypes>usertypes</a> - contains a list of accepted usertypes
+	* usertypes - contains a list of accepted usertypes
 
-	<li><a href=#students>students</a> - contains basic information on all
+	* students - contains basic information on all
 	DCU students (id number, name, email, course, year).
 
-	<li><a href=#staff>staff</a> - contains basic information on most
+	* staff - contains basic information on most
 	DCU staff (id number, name, email).
 
-	<li><a href=#reserved>reserved</a> - contains a list of additional
+	* reserved - contains a list of additional
 	reserved names.
 
-</ul>
 
-<p>The traditional <code>/etc/passwd</code>, <code>/etc/shadow</code> and
-<code>/etc/group</code> files in addition to the filesystem store Unix account
-information.</p>
+The traditional `/etc/passwd`, `/etc/shadow` and
+`/etc/group` files in addition to the filesystem store Unix account
+information.
 
-<a name=data></a><h2>User data</h2>
+## User data
 
-<p>The traditional UNIX <code>/etc/passwd</code> database doesn't contain
+The traditional UNIX `/etc/passwd` database doesn't contain
 enough information for user accounts for RedBrick's needs (nor does it support
 complex queries that a database can) hence the need for a user database. Following
 are descriptions of the various database tables:
 
-<a name=sql-users></a><h3>users [<a href=userdb_users.sql>schema</a>]</h3>
+### users [schema]
 
 <dt>Username</dt>
 
@@ -314,7 +271,7 @@ are descriptions of the various database tables:
 <dt>Usertype</dt>
 
 <dd>Corresponds to both UNIX group and type of user. This references
-the usertype foreign key in the <a href=#usertypes>usertypes</a> table to
+the usertype foreign key in the usertypes table to
 ensure it is valid.</dd>
 
 <dt>Newbie</dt>
@@ -372,14 +329,14 @@ the current time &amp; date so there's no need to explicitly set it.</dd>
 Only applies to real user accounts (i.e. member, staff, associat, committe,
 guest).</dd>
 
-<a name=usertypes></a><h3>usertypes [<a href=userdb_usertypes.sql>schema</a>]</h3>
+### usertypes [schema]
 
 <dt>Usertype</dt>
 
 <dd>Name of usertype. As these correspond to real Unix groups, there is a limit
 of maximum length 8 characters.
 
-<p>Description of usertypes:</p>
+Description of usertypes:
 
 <dt>system</dt>
 
@@ -431,7 +388,7 @@ current secretary/chair of the society.
 
 <dd>Account for a Redbrick/DCU/Academic/Course project. Username set to
 abbreviation of project name, name set to full project name, email set to a
-contact address for the project leader.</a>
+contact address for the project leader.
 
 <dt>redbrick</dt>
 
@@ -444,12 +401,11 @@ if appropriate, otherwise the redbrick committee.</dd>
 <dd>Guest accounts. For accounts that don't fit into any of the above types.
 These must be approved by the committee on a per-user basis.</dd>
 
-<a name=students></a><h3>students [<a href=userdb_students.sql>schema</a>]</h3>
+### students [schema]
 
-<p>This database is updated nightly from DCU's LDAP server (host: atlas.dcu.ie,
-base DN: 'ou=Students, o=DCU', search filter: objectClass=person) by <a
-href=rebuild_userdb_students.html>rebuild_userdb_students</a> launched by
-cron.</p>
+This database is updated nightly from DCU's LDAP server (host: atlas.dcu.ie,
+base DN: 'ou=Students, o=DCU', search filter: objectClass=person) by rebuild_userdb_students launched by
+cron.
 
 <dt>id</dt>
 
@@ -473,12 +429,11 @@ cron.</p>
 used sometimes, e.g: 'X' for exchange student, so can't use an integer
 type).</dd>
 
-<a name=staff></a><h3>staff [<a href=userdb_staff.sql>schema</a>]</h3>
+### staff [schema]
 
-<p>This database is updated nightly from DCU's LDAP server (host: atlas.dcu.ie,
-base DN: 'ou=Staff, o=DCU', search filter: objectClass=person) by <a
-href=rebuild_userdb_staff.html>rebuild_userdb_staff</a> launched by
-cron.</p>
+This database is updated nightly from DCU's LDAP server (host: atlas.dcu.ie,
+base DN: 'ou=Staff, o=DCU', search filter: objectClass=person) by rebuild_userdb_staff launched by
+cron.
 
 <dt>id</dt>
 
@@ -493,15 +448,15 @@ Non-null unique integer.</dd>
 
 <dd>DCU email address. Non-null string.</dd>
 
-<a name=reserved></a><h3>reserved [<a href=userdb_reserved.sql>schema</a>]</h3>
+### reserved [schema]
 
-<p>This database is updated nightly from the various email alias files, Unix
+This database is updated nightly from the various email alias files, Unix
 group names and DCU entries for the redbrick domain and any other zones the
 society host. Note that the entries in this table are not strictly reserved,
 they can be ignored if necessary (e.g. creating a system user in the database
 which already has the Unix group setup in advance, etc.). Also of note is that
 these entries are not permanent, as the entire table is purged and rebuilt.
-Permanent reserved entries belong in the users table as noted previously.</p>
+Permanent reserved entries belong in the users table as noted previously.
 
 <dt>username</dt>
 
@@ -512,34 +467,25 @@ Permanent reserved entries belong in the users table as noted previously.</p>
 <dd>Information about the source/nature of this reserved username. Non-null
 string.</dd>
 
-<a name=boundary></a><h2>Software and Hardware Boundaries</h2>
+## Software and Hardware Boundaries
 
-<p>The project uses the OS native command line tools for performing all
-UNIX <code>/etc/passwd</code> operations and the majority of account
-operations. The 3rd party utility <code>setquota</code> is used for
+The project uses the OS native command line tools for performing all
+UNIX `/etc/passwd` operations and the majority of account
+operations. The 3rd party utility `setquota` is used for
 the modification of disk quotas. DCU student and staff information is retrieved
-from the publically accessible LDAP service on <code>atlas.dcu.ie</code>.</p>
+from the publically accessible LDAP service on `atlas.dcu.ie`.
 
-<a name=refs></a><h2>References</h2>
+## References
 
-<h3>Software</h3>
+### Software
 
-<ul>
-	<li><a href='http://www.python.org/'>Python</a>
-	<li><a href='http://www.postgresql.org/'>PostgresSQL</a>
-</ul>
+* Python
+* PostgresSQL
 
-<h3>UNIX (Solaris) user administration tool manpages</h3>
+### UNIX (Solaris) user administration tool manpages
 
-<ul>
-<li><a href="http://www.uwsg.iu.edu/usail/man/solaris/useradd.1.html">useradd</a>
-<li><a href="http://www.uwsg.iu.edu/usail/man/solaris/usermod.1.html">usermod</a>
-<li><a href="http://www.uwsg.iu.edu/usail/man/solaris/userdel.1.html">userdel</a>
-</ul>
-
-<hr>
+* useradd
+* usermod
+* userdel
 
 $Id: tech-manual.html,v 1.1 2003/03/28 16:37:38 cns Exp $
-
-</body>
-</html>
